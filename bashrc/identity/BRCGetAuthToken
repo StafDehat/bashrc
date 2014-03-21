@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#
+# Authenticate with API key to get a token
+
+function usage() {
+  echo "Usage: getAuthToken [-u USERNAME] [-k API_KEY]"
+}
+
+while getopts ":hu:k:" arg; do
+  case $arg in
+    u) USERNAME=$OPTARG;;
+    k) API_KEY=$OPTARG;;
+    *) usage && exit 1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z $USERNAME ]; then
+  echo "ERROR: Must define USERNAME in environment or argument"
+  usage && exit 1
+elif [ -z $API_KEY ]; then
+  echo "ERROR: Must define API_KEY in environment or argument"
+  usage && exit 1
+fi
+
+ENDPOINT=$IDENTITY_ENDPOINT
+TOKENDATA=$( curl $ENDPOINT/tokens \
+               -H "Content-Type: application/json" \
+               -d '{ "auth": { 
+                     "RAX-KSKEY:apiKeyCredentials": {
+                       "apiKey": "$API_KEY",
+                       "username": "$USERNAME" } } }' 2>/dev/null | json.tool )
+
+AUTHTOKEN=$( echo "$TOKENDATA" \
+              | sed -n 's/^bashrc:access:token:id://p' )
+TENANTID=$( echo "$TOKENDATA" \
+              | sed -n 's/^bashrc:access:token:tenant:id://p' )
+EXPIRES=$( echo "$TOKENDATA" \
+              | sed -n 's/^bashrc:access:token:expires://p' )
+
+echo "AUTHTOKEN=$AUTHTOKEN"
+echo "TENANTID=$TENANTID"
+echo "EXPIRES=$EXPIRES"
