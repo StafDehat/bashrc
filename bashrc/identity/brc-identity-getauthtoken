@@ -4,7 +4,7 @@
 # Authenticate with API key to get a token
 
 function usage() {
-  echo "Usage: getAuthToken [-u USERNAME] [-k API_KEY]"
+  echo "Usage: brc-identity-getauthtoken [-u USERNAME] [-k API_KEY]"
 }
 
 while getopts ":hu:k:" arg; do

@@ -4,7 +4,7 @@ if [ -z "$BASHRC_BASE" ]; then
   export BASHRC_BASE=$(pwd)/$(dirname $0)
 fi
 
-if ! which json.tool &>/dev/null; then
+if ! which brc-json.tool &>/dev/null; then
   PATH=$PATH:$BASHRC_BASE/util
 fi
 
