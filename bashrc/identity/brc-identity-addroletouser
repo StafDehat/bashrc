@@ -4,41 +4,57 @@
 # List available roles on the given cloud account
 
 function usage() {
-  echo "Usage: brc-identity-listroles [-t BRC_TENANTID] [-a BRC_AUTHTOKEN]"
+  echo "Usage: brc-identity-listroles [-t BRC_TENANTID] [-a BRC_AUTHTOKEN] -u USERID -r ROLEID"
   echo "Example:"
-  echo "  # brc-identity-listroles -t 123456 -a 1a2b3c4d5e6f7g8h9i0j"
+  echo "  # brc-identity-listroles -t 123456 \\"
+  echo "  #                        -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "  #                        -u cf03c840b20a11e3b30b10bf4840bf8d \\"
+  echo "  #                        -r 999999"
   echo "Example:"
   echo "  # export BRC_TENANTID=123456"
   echo "  # export BRC_AUTHTOKEN=1a2b3c4d5e6f7g8h9i0j"
-  echo "  # brc-identity-listroles"
+  echo "  # brc-identity-listroles -u cf03c840b20a11e3b30b10bf4840bf8d \\"
+  echo "  #                        -r 999999"
 }
 
 while getopts ":ht:a:" arg; do
   case $arg in
     t) BRC_TENANTID=$OPTARG;;
     a) BRC_AUTHTOKEN=$OPTARG;;
+    u) USERID=$OPTARG;;
+    r) ROLEID=$OPTARG;;
     *) usage && exit 1;;
   esac
 done #End arguments
 shift $(($OPTIND - 1))
 
+USAGEFLAG=0
 if [ -z $BRC_TENANTID ]; then
   echo "ERROR: Must define BRC_TENANTID in environment or argument"
-  usage && exit 1
+  USAGEFLAG=1
 elif [ -z $BRC_AUTHTOKEN ]; then
   echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
-  usage && exit 1
+  USAGEFLAG=1
+elif [ -z $USERID ]; then
+  echo "ERROR: Must define USERID in environment or argument"
+  USAGEFLAG=1
+elif [ -z $ROLEID ]; then
+  echo "ERROR: Must define ROLEID in environment or argument"
+  USAGEFLAG=1
+fi
+if [ $USAGEFLAG -ne 0 ]; then
+  usage &&exit 1 
 fi
 
-ENDPOINT=$IDENTITY_ENDPOINT
-#  /users/{user_id}/roles/OS-KSADM/{role_id} 
-DATA=$( curl $ENDPOINT/OS-KSADM/roles \
-             -H "Content-Type: application/json" \
-             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-          2>/dev/null | brc-json.tool )
 
-IDS=$( echo "$DATA" \
-        | sed -n 's/bashrc~roles~id.\([0-9]*\)~.*$/\1/p' )
+ENDPOINT=$IDENTITY_ENDPOINT
+DATA=$(curl --write-out \\n%{http_code} --silent --output - \
+            $ENDPOINT/users/$USERID/roles/OS-KSADM/$ROLEID \
+            -H "Content-Type: application/json" \
+            -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+         2>/dev/null )
+CODE=$( echo "$DATA" | tail -n 1 )
+DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
 
 # Just clean up the output a bit
 echo ---

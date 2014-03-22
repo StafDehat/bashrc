@@ -30,14 +30,28 @@ elif [ -z $BRC_API_KEY ]; then
   usage && exit 1
 fi
 
-ENDPOINT=$IDENTITY_ENDPOINT
-TOKENDATA=$( curl $ENDPOINT/tokens \
-                  -H "Content-Type: application/json" \
-                  -d '{ "auth": { 
-                        "RAX-KSKEY:apiKeyCredentials": {
-                          "apiKey": "'$BRC_API_KEY'",
-                          "username": "'$BRC_USERNAME'" } } }' \
-               2>/dev/null | brc-json.tool )
+#ENDPOINT=$IDENTITY_ENDPOINT
+DATA=$(curl --write-out \\n%{http_code} --silent --output - \
+            $IDENTITY_ENDPOINT/tokens \
+            -H "Content-Type: application/json" \
+            -d '{ "auth": { 
+                  "RAX-KSKEY:apiKeyCredentials": {
+                    "apiKey": "'$BRC_API_KEY'",
+                    "username": "'$BRC_USERNAME'" } } }' \
+         2>/dev/null )
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  echo "$DATA" | head -n -1
+  echo
+  echo "ERROR: API call unsuccessful"
+  echo "Response code: $CODE"
+  echo "Raw response data above."
+  exit 1
+fi
+
+TOKENDATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
 
 AUTHTOKEN=$( echo "$TOKENDATA" \
               | sed -n 's/^bashrc~access~token~id~//p' )
@@ -49,3 +63,7 @@ EXPIRES=$( echo "$TOKENDATA" \
 echo "BRC_AUTHTOKEN=$AUTHTOKEN"
 echo "BRC_TENANTID=$TENANTID"
 echo "EXPIRES=$EXPIRES"
+exit 0
+
+
+
