@@ -74,10 +74,5 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
 fi
 
 DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
-
-# Just clean up the output a bit
-echo ---
-for x in $IDS; do
-  echo "$DATA" | grep "\.$x~"
-  echo ---
-done
+echo "Response code: $CODE"
+echo "Done - no response data"
