@@ -12,8 +12,8 @@ Installation:
   # source ./bashrc/bashrc/bashrc.bash
 
   This modifies your PATH so you have immediate access
-  to all the scripts.  Just type BRC and hit tab twice
+  to all the scripts.  Just type 'brc' and hit tab twice
   to see the various commands available to you.
 
   Questions?
-  andrew.howard@rackspace.com
+  andrew@rootmypc.net
