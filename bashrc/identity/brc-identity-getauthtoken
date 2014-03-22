@@ -26,18 +26,19 @@ fi
 
 ENDPOINT=$IDENTITY_ENDPOINT
 TOKENDATA=$( curl $ENDPOINT/tokens \
-               -H "Content-Type: application/json" \
-               -d '{ "auth": { 
-                     "RAX-KSKEY:apiKeyCredentials": {
-                       "apiKey": "'$API_KEY'",
-                       "username": "'$USERNAME'" } } }' 2>/dev/null | json.tool )
+                  -H "Content-Type: application/json" \
+                  -d '{ "auth": { 
+                        "RAX-KSKEY:apiKeyCredentials": {
+                          "apiKey": "'$API_KEY'",
+                          "username": "'$USERNAME'" } } }' \
+               2>/dev/null | brc-json.tool )
 
 AUTHTOKEN=$( echo "$TOKENDATA" \
-              | sed -n 's/^bashrc:access:token:id://p' )
+              | sed -n 's/^bashrc~access~token~id~//p' )
 TENANTID=$( echo "$TOKENDATA" \
-              | sed -n 's/^bashrc:access:token:tenant:id://p' )
+              | sed -n 's/^bashrc~access~token~tenant~id~//p' )
 EXPIRES=$( echo "$TOKENDATA" \
-              | sed -n 's/^bashrc:access:token:expires://p' )
+              | sed -n 's/^bashrc~access~token~expires~//p' )
 
 echo "AUTHTOKEN=$AUTHTOKEN"
 echo "TENANTID=$TENANTID"
