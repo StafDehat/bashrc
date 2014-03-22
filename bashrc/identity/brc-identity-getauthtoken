@@ -46,6 +46,6 @@ TENANTID=$( echo "$TOKENDATA" \
 EXPIRES=$( echo "$TOKENDATA" \
               | sed -n 's/^bashrc~access~token~expires~//p' )
 
-echo "AUTHTOKEN=$AUTHTOKEN"
-echo "TENANTID=$TENANTID"
+echo "BRC_AUTHTOKEN=$AUTHTOKEN"
+echo "BRC_TENANTID=$TENANTID"
 echo "EXPIRES=$EXPIRES"
