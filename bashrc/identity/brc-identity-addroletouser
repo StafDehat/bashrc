@@ -17,18 +17,21 @@ function usage() {
   echo "  #                        -r 999999"
 }
 
-while getopts ":ht:a:" arg; do
+USAGEFLAG=0
+while getopts ":hu:r:t:a:" arg; do
   case $arg in
     t) BRC_TENANTID=$OPTARG;;
     a) BRC_AUTHTOKEN=$OPTARG;;
     u) USERID=$OPTARG;;
     r) ROLEID=$OPTARG;;
-    *) usage && exit 1;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
   esac
 done #End arguments
 shift $(($OPTIND - 1))
 
-USAGEFLAG=0
 if [ -z $BRC_TENANTID ]; then
   echo "ERROR: Must define BRC_TENANTID in environment or argument"
   USAGEFLAG=1
@@ -46,14 +49,30 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage &&exit 1 
 fi
 
-
-ENDPOINT=$IDENTITY_ENDPOINT
 DATA=$(curl --write-out \\n%{http_code} --silent --output - \
-            $ENDPOINT/users/$USERID/roles/OS-KSADM/$ROLEID \
+            $IDENTITY_ENDPOINT/users/$USERID/roles/OS-KSADM/$ROLEID \
             -H "Content-Type: application/json" \
             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
          2>/dev/null )
+RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  echo "ERROR: Attempt to reach API (a curl command) failed."
+  echo "Note: This relies on IDENTITY_ENDPOINT being defined."
+  echo "See the README - this SDK modifies your environment -"
+  echo "it shouldn't be run with full paths."
+  exit 1
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  echo "$DATA" | head -n -1
+  echo
+  echo "ERROR: API call unsuccessful"
+  echo "Response code: $CODE"
+  echo "Raw response data above."
+  exit 1
+fi
+
 DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
 
 # Just clean up the output a bit
