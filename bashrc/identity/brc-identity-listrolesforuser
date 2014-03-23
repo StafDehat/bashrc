@@ -4,7 +4,7 @@
 # List available roles on the given cloud account
 
 function usage() {
-  echo "Usage: brc-identity-listroles [-t BRC_TENANTID] [-a BRC_AUTHTOKEN] -u USERID -r ROLEID"
+  echo "Usage: brc-identity-listrolesforuser [-t BRC_TENANTID] [-a BRC_AUTHTOKEN] -u USERID -r ROLEID"
   echo "Example:"
   echo "  # brc-identity-listroles -t 123456 \\"
   echo "  #                        -a 1a2b3c4d5e6f7g8h9i0j \\"
