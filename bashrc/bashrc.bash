@@ -11,5 +11,6 @@ if [ $ALLGOOD -ne 1 ]; then
   exit 1
 fi
 
-export BASHRC_BASE=$(pwd)/$(dirname $0)
+export BASHRC_BASE=$(pwd)/$( dirname ${BASH_SOURCE[0]} )
 source $BASHRC_BASE/identity.bash
+
