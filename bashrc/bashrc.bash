@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
+
 ALLGOOD=1
 if which curl &>/dev/null -ne 0; then
   echo "ERROR: curl binary not found in PATH"
@@ -11,6 +13,7 @@ if [ $ALLGOOD -ne 1 ]; then
   exit 1
 fi
 
-export BASHRC_BASE=$(pwd)/$( dirname ${BASH_SOURCE[0]} )
-source $BASHRC_BASE/identity.bash
+export BASHRC_BASE=$( echo "$ABSPATH" | sed 's/^\(.*\)\/.*$/\1/' )
+
+source $BASHRC_BASE/bashrc/identity.bash
 
