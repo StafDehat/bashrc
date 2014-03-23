@@ -38,6 +38,7 @@ DATA=$(curl --write-out \\n%{http_code} --silent --output - \
              -H "Content-Type: application/json" \
              -H "X-Auth-Token: $BRC_AUTHTOKEN" \
           2>/dev/null )
+RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
 
 # Check for failed API call
