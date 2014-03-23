@@ -9,13 +9,25 @@ ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
 . ~/.rackspace-bashrc-creds
 
 # brc-identity-getauthtoken
-brc-identity-getauthtoken
-exit 0
+echo
+echo "Auth:"
+for x in `brc-identity-getauthtoken`; do
+  echo $x
+  export $x
+done
 
-brc-identity-listusers
+# brc-identity-listusers
+USERS=`brc-identity-listusers`
+echo
+echo "Users:"
+echo "$USERS"
+USERID=$(echo "$USERS" | sed -n 's/bashrc~users~id\.1~//p')
+
+exit 0
+brc-identity-listrolesforuser
+
 brc-identity-listroles
 
-brc-identity-listrolesforuser
 brc-identity-addroletouser
 
 
