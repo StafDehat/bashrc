@@ -58,20 +58,23 @@ if [ $USAGEFLAG -ne 0 ]; then
 fi
 
 
-REQUESTDATA="{ 'user': { 'username': '$NEWUSER'"
-if [ ! -z "$PASSWORD" ]; then
-  REQUESTDATA="$REQUESTDATA , 'OS-KSADM:password': '$PASSWORD' "
-fi
-if [ ! -z "$EMAIL" ]; then
-  REQUESTDATA="$REQUESTDATA , 'email': '$EMAIL' "
-fi
-if [ ! -z "$ENABLED" ]; then
-  REQUESTDATA="$REQUESTDATA , 'enabled': '$ENABLED' "
-fi
-REQUESTDATA="$REQUESTDATA } }"
+REQUESTDATA=$(
+  echo -n '{ "user": { "username": "'$NEWUSER'"'
+  if [ ! -z "$PASSWORD" ]; then
+    echo -n ', "OS-KSADM:password": "'$PASSWORD'"'
+  fi
+  if [ ! -z "$EMAIL" ]; then
+    echo -n ', "email": "'$EMAIL'"'
+  fi
+  if [ ! -z "$ENABLED" ]; then
+    echo -n ', "enabled": '$ENABLED
+  fi
+  echo ' } }'
+)
+
 
 echo "$REQUESTDATA"
-
+echo
 
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $IDENTITY_ENDPOINT/users \
