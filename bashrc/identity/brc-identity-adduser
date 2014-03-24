@@ -71,11 +71,6 @@ REQUESTDATA=$(
   fi
   echo ' } }'
 )
-
-
-echo "$REQUESTDATA"
-echo
-
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $IDENTITY_ENDPOINT/users \
              -H "Content-Type: application/json" \
@@ -94,6 +89,5 @@ fi
 
 DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
 
-# Just clean up the output a bit
-echo "User added.  Response data:"
 echo "$DATA"
+
