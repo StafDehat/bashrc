@@ -3,6 +3,8 @@
 #
 # Authenticate with API key to get a token
 
+. $BASHRC_BASE/bashrc/errors.bash
+
 function usage() {
   echo "Usage: brc-identity-getauthtoken [-h] [-u BRC_USERNAME] [-k BRC_API_KEY]"
   echo "Example:"
@@ -54,18 +56,9 @@ CODE=$( echo "$DATA" | tail -n 1 )
 
 # Check for failed API call
 if [ $RETVAL -ne 0 ]; then
-  echo "ERROR: Attempt to reach API (a curl command) failed."
-  echo "Note: This relies on IDENTITY_ENDPOINT being defined."
-  echo "See the README - this SDK modifies your environment -"
-  echo "it shouldn't be run with full paths."
-  exit 1
+  errorcurlfail
 elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
-  echo "$DATA" | head -n -1
-  echo
-  echo "ERROR: API call unsuccessful"
-  echo "Response code: $CODE"
-  echo "Raw response data above."
-  exit 1
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
 fi
 
 DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )

@@ -17,16 +17,22 @@ for x in `brc-identity-getauthtoken`; do
 done
 
 # brc-identity-listusers
-USERS=`brc-identity-listusers`
+USERS=$( brc-identity-listusers )
 echo
 echo "Users:"
 echo "$USERS"
 USERID=$(echo "$USERS" | sed -n 's/bashrc~users~id\.1~//p')
 
+# brc-identity-listroles
+ROLES=$( brc-identity-listroles )
+echo
+echo "Roles:"
+echo "$ROLES"
+ROLEID=$( echo "$ROLES" | sed -n 's/bashrc~roles~id\.1~//p' )
+
 exit 0
 brc-identity-listrolesforuser
 
-brc-identity-listroles
 
 brc-identity-addroletouser
 

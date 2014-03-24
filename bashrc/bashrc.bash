@@ -15,5 +15,6 @@ fi
 
 export BASHRC_BASE=$( echo "$ABSPATH" | sed 's/^\(.*\)\/.*$/\1/' )
 
-source $BASHRC_BASE/bashrc/identity.bash
+#. $BASHRC_BASE/bashrc/errors.bash
+. $BASHRC_BASE/bashrc/identity.bash
 

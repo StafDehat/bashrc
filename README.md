@@ -15,5 +15,9 @@ Installation:
   to all the scripts.  Just type 'brc' and hit tab twice
   to see the various commands available to you.
 
+  For a more permanent change, try adding that source
+  command to either your .bash_profile, or to a new file
+  in /etc/profile.d/
+
   Questions?
   andrew@rootmypc.net
