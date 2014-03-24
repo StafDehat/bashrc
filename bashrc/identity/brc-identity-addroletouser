@@ -32,16 +32,19 @@ while getopts ":hu:r:a:" arg; do
 done #End arguments
 shift $(($OPTIND - 1))
 
-if [ -z $BRC_AUTHTOKEN ]; then
+if [ -z "$BRC_AUTHTOKEN" ]; then
   echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
   USAGEFLAG=1
-elif [ -z $USERID ]; then
+fi
+if [ -z "$USERID" ]; then
   echo "ERROR: Must define USERID in environment or argument"
   USAGEFLAG=1
-elif [ -z $ROLEID ]; then
+fi
+if [ -z "$ROLEID" ]; then
   echo "ERROR: Must define ROLEID in environment or argument"
   USAGEFLAG=1
 fi
+
 if [ $USAGEFLAG -ne 0 ]; then
   usage &&exit 1 
 fi

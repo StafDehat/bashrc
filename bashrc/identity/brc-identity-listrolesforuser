@@ -29,16 +29,19 @@ while getopts ":hu:a:" arg; do
 done #End arguments
 shift $(($OPTIND - 1))
 
-if [ -z $BRC_TENANTID ]; then
+if [ -z "$BRC_TENANTID" ]; then
   echo "ERROR: Must define BRC_TENANTID in environment or argument"
   USAGEFLAG=1
-if [ -z $BRC_AUTHTOKEN ]; then
+fi
+if [ -z "$BRC_AUTHTOKEN" ]; then
   echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
   USAGEFLAG=1
-elif [ -z $USERID ]; then
+fi
+if [ -z "$USERID" ]; then
   echo "ERROR: Must define USERID in environment or argument"
   USAGEFLAG=1
 fi
+
 if [ $USAGEFLAG -ne 0 ]; then
   usage &&exit 1 
 fi

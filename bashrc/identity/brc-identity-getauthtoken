@@ -29,10 +29,11 @@ while getopts ":hu:k:" arg; do
 done #End arguments
 shift $(($OPTIND - 1))
 
-if [ -z $BRC_USERNAME ]; then
+if [ -z "$BRC_USERNAME" ]; then
   echo "ERROR: Must define BRC_USERNAME in environment or argument"
   USAGEFLAG=1
-elif [ -z $BRC_API_KEY ]; then
+fi
+if [ -z "$BRC_API_KEY" ]; then
   echo "ERROR: Must define BRC_API_KEY in environment or argument"
   USAGEFLAG=1
 fi
