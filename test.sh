@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# If any command fails, exit
+set -e
+
 ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
 
 # Import framework
@@ -9,70 +12,50 @@ ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
 . ~/.rackspace-bashrc-creds
 
 # brc-identity-getauthtoken
-AUTHINFO=$( brc-identity-getauthtoken )
-RETVAL=$?
-if [ $RETVAL -ne 0 ]; then
-  echo "Failure"
-  exit 0
-fi
 echo
 echo "Auth:"
+AUTHINFO=$( brc-identity-getauthtoken )
 for x in $AUTHINFO; do
   echo $x
   export $x
 done
 
 # brc-identity-listusers
-USERS=$( brc-identity-listusers )
-RETVAL=$?
 echo
 echo "Users:"
+USERS=$( brc-identity-listusers )
 echo "$USERS"
 USERID=$(echo "$USERS" | sed -n 's/^bashrc~users~id\.1~//p')
-if [ $RETVAL -ne 0 ]; then
-  echo "Failure"
-  exit 0
-fi
 
 # brc-identity-listroles
-ROLES=$( brc-identity-listroles )
-RETVAL=$?
 echo
 echo "Roles:"
+ROLES=$( brc-identity-listroles )
 echo "$ROLES"
 ROLEID=$( echo "$ROLES" | sed -n 's/^bashrc~roles~id\.1~//p' )
-if [ $RETVAL -ne 0 ]; then
-  echo "Failure"
-  exit 0
-fi
 
 # brc-identity-adduser
-USERINFO=$( brc-identity-adduser -u "bashrc.test" )
-RETVAL=$?
 echo
 echo "New user info:"
+USERINFO=$( brc-identity-adduser -u "bashrc.test" )
 echo "$USERINFO"
 USERID=$( echo "$USERINFO" | sed -n 's/^bashrc~user~id~//p' )
-if [ $RETVAL -ne 0 ]; then
-  echo "Failure"
-  exit 0
-fi
 
 # brc-identity-addroletouser
-# Add a role
+echo
+echo "Adding role to user:"
+brc-identity-addroletouser -u $USERID -r $ROLEID
+echo "Done"
 
 # brc-identity-listrolesforuser
-# Confirm added role exists
+echo
+echo "Roles for new user:"
+brc-identity-listrolesforuser -u $USERID
 
 # brc-identity-deleteuser
-echo "Userid: $USERID"
 echo 
 echo "Deleting user:"
+echo "Userid: $USERID"
 brc-identity-deleteuser -i $USERID
-RETVAL=$?
-if [ $RETVAL -ne 0 ]; then
-  echo "Failure"
-  exit 0
-fi
 
 
