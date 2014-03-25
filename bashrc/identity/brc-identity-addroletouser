@@ -11,10 +11,12 @@ function usage() {
   echo "  # brc-identity-addroletouser -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "  #                            -u cf03c840b20a11e3b30b10bf4840bf8d \\"
   echo "  #                            -r 999999"
-  echo "Example:"
-  echo "  # export BRC_AUTHTOKEN=1a2b3c4d5e6f7g8h9i0j"
-  echo "  # brc-identity-addroletouser -u cf03c840b20a11e3b30b10bf4840bf8d \\"
-  echo "  #                            -r 999999"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -h	Print this help"
+  echo "  -r X	Role ID"
+  echo "  -u X	User ID"
 }
 
 USAGEFLAG=0

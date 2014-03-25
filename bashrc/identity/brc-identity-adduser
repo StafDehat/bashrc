@@ -7,28 +7,28 @@
 
 function usage() {
   echo "Usage: brc-identity-adduser [-h] [-a BRC_AUTHTOKEN] -u NEWUSER"
-  echo "                            [-p PASSWORD] [-m EMAIL] [-e True|False]"
+  echo "                            [-p PASSWORD] [-m EMAIL] [-e true|false]"
   echo "Example:"
   echo "  # brc-identity-adduser -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "  #                      -u NEWUSER"
-  echo "Example:"
-  echo "  # export BRC_AUTHTOKEN=1a2b3c4d5e6f7g8h9i0j"
-  echo "  # brc-identity-adduser -u NEWUSER"
   echo "Arguments:"
-  echo "  -u NEWUSER	Username for new user"
-  echo "  -p PASSWORD	Password for new user"
-  echo "  -m EMAIL	Contact email address of new user"
-  echo "  -e True|False	Enabled?  True or False"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -e X	Enabled?  true|false"
+  echo "  -h	Print this help"
+  echo "  -m X	Contact email address of new user"
+  echo "  -p X	Password for new user"
+  echo "  -u X	Username for new user"
 }
 
 USAGEFLAG=0
 while getopts ":ha:u:p:m:e:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
-    u) NEWUSER=$OPTARG;;
-    p) PASSWORD=$OPTARG;;
-    m) EMAIL=$OPTARG;;
     e) ENABLED=$OPTARG;;
+    m) EMAIL=$OPTARG;;
+    p) PASSWORD=$OPTARG;;
+    u) NEWUSER=$OPTARG;;
     h) usage && exit 0;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -38,6 +38,7 @@ while getopts ":ha:u:p:m:e:" arg; do
 done #End arguments
 shift $(($OPTIND - 1))
 
+# Check for required arguments
 if [ -z "$BRC_AUTHTOKEN" ]; then
   echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
   USAGEFLAG=1
@@ -47,12 +48,11 @@ if [ -z "$NEWUSER" ]; then
   USAGEFLAG=1
 fi
 if [ ! -z "$ENABLED" ]; then
-  if [[ "$ENABLED" != "True" && "$ENABLED" != "False" ]]; then
-    echo "ERROR: \"-e\" must be either 'True' or 'False'"
+  if [[ "$ENABLED" != "true" && "$ENABLED" != "false" ]]; then
+    echo "ERROR: \"-e\" must be either 'true' or 'false'"
     USAGEFLAG=1
   fi
 fi
-
 if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi

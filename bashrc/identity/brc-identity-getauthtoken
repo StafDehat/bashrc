@@ -9,10 +9,12 @@ function usage() {
   echo "Usage: brc-identity-getauthtoken [-h] [-u BRC_USERNAME] [-k BRC_API_KEY]"
   echo "Example:"
   echo "  # brc-identity-getauthtoken -u johndoe -k 1a2b3c4d5e6f7g8h9i0j"
-  echo "Example:"
-  echo "  # export BRC_USERNAME=johndoe"
-  echo "  # export BRC_API_KEY=1a2b3c4d5e6f7g8h9i0j"
-  echo "  # brc-identity-getauthtoken"
+  echo "Arguments:"
+  echo "  -h	Print this help"
+  echo "  -k X  Cloud account API key.  This can be set via the environment"
+  echo "        variable BRC_API_KEY instead of as an argument."
+  echo "  -u X	Cloud account username.  This can be set via the environment"
+  echo "        variable BRC_USERNAME instead of as an argument."
 }
 
 USAGEFLAG=0

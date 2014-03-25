@@ -10,11 +10,9 @@ function usage() {
   echo "Example:"
   echo "  # brc-identity-deleteuser -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "  #                         -i 477f91eab3a111e3aa12f30ec4c95229"
-  echo "Example:"
-  echo "  # export BRC_AUTHTOKEN=1a2b3c4d5e6f7g8h9i0j"
-  echo "  # brc-identity-deleteuser -i 477f91eab3a111e3aa12f30ec4c95229"
   echo "Arguments:"
-  echo "  -a X	API authentication token"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
   echo "  -h	Print this help"
   echo "  -i X  ID of user to delete"
 }

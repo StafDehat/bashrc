@@ -10,9 +10,11 @@ function usage() {
   echo "Example:"
   echo "  # brc-identity-listroles -a 88cfbaa8b22511e39b7d001c259f31af \\"
   echo "  #                        -u cf03c840b20a11e3b30b10bf4840bf8d"
-  echo "Example:"
-  echo "  # export BRC_AUTHTOKEN=88cfbaa8b22511e39b7d001c259f31af"
-  echo "  # brc-identity-listrolesforuser -u cf03c840b20a11e3b30b10bf4840bf8d"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -h	Print this help"
+  echo "  -u X  ID of cloud user."
 }
 
 USAGEFLAG=0
