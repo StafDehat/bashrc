@@ -60,5 +60,13 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
 fi
 
 DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
-echo "Response code: $CODE"
-echo "Done - no response data"
+IDS=$( echo "$DATA" \
+        | sed -n 's/bashrc~roles~id.\([0-9]*\)~.*$/\1/p' )
+
+# Just clean up the output a bit
+echo ---
+for x in $IDS; do
+  echo "$DATA" |  awk -F \~ '$3 ~ "^.*\\.'$x'$" {print}'
+  echo ---
+done
+

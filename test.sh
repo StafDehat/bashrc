@@ -25,7 +25,6 @@ echo
 echo "Users:"
 USERS=$( brc-identity-listusers )
 echo "$USERS"
-USERID=$(echo "$USERS" | sed -n 's/^bashrc~users~id\.1~//p')
 
 # brc-identity-listroles
 echo
@@ -36,7 +35,7 @@ ROLEID=$( echo "$ROLES" | sed -n 's/^bashrc~roles~id\.1~//p' )
 
 # brc-identity-adduser
 echo
-echo "New user info:"
+echo "Adding user:"
 USERINFO=$( brc-identity-adduser -u "bashrc.test" )
 echo "$USERINFO"
 USERID=$( echo "$USERINFO" | sed -n 's/^bashrc~user~id~//p' )
@@ -49,8 +48,9 @@ echo "Done"
 
 # brc-identity-listrolesforuser
 echo
-echo "Roles for new user:"
-brc-identity-listrolesforuser -u $USERID
+echo "Listing roles for new user:"
+ROLES=$( brc-identity-listrolesforuser -u $USERID )
+echo "$ROLES"
 
 # brc-identity-deleteuser
 echo 

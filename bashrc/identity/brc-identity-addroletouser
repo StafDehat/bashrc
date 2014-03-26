@@ -51,8 +51,10 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage &&exit 1 
 fi
 
-DATA=$(curl --write-out \\n%{http_code} --silent --output - \
+
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
             $IDENTITY_ENDPOINT/users/$USERID/roles/OS-KSADM/$ROLEID \
+            -X PUT \
             -H "Content-Type: application/json" \
             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
          2>/dev/null )
