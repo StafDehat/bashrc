@@ -49,11 +49,10 @@ cat | sed -e's/":/"\n:\n/g' \
   fi
   LASTLINE="$LINE"
 done
-) | \
-while read LINE; do
-  if [ $( echo "$LINE" | grep -c "$PREFIX" ) -eq 0 ]; then
-    echo "$PREFIX"
+) | sort -r | while read LINE; do
+  if [ $( echo "$PREVIOUS" | grep -c "$LINE" ) -eq 0 ]; then
+    echo "$LINE"
   fi
-  PREFIX="$LINE"
-done
+  PREVIOUS="$LINE"
+done | sort
 
