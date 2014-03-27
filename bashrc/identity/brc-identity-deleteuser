@@ -62,5 +62,4 @@ fi
 
 DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
 
-# Just clean up the output a bit
 echo "User deleted."

@@ -4,6 +4,7 @@ CSTACK=(0)
 PSTACK=(0)
 
 PREFIX="bashrc"
+(
 cat | sed -e's/":/"\n:\n/g' \
           -e's/{/\n{\n/g' \
           -e's/}/\n}\n/g' \
@@ -48,5 +49,11 @@ cat | sed -e's/":/"\n:\n/g' \
   fi
   LASTLINE="$LINE"
 done
-
+) | \
+while read LINE; do
+  if [ $( echo "$LINE" | grep -c "$PREFIX" ) -eq 0 ]; then
+    echo "$PREFIX"
+  fi
+  PREFIX="$LINE"
+done
 

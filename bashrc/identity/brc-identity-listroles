@@ -56,9 +56,4 @@ DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
 IDS=$( echo "$DATA" \
         | sed -n 's/bashrc~roles~id.\([0-9]*\)~.*$/\1/p' )
 
-# Just clean up the output a bit
-echo ---
-for x in $IDS; do
-  echo "$DATA" | grep "\.$x~"
-  echo ---
-done
+echo "$DATA"

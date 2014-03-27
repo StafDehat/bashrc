@@ -57,9 +57,4 @@ DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
 USERIDS=$( echo "$DATA" \
              | sed -n 's/bashrc~users~username.\([0-9]*\)~.*$/\1/p' )
 
-# Just clean up the output a bit
-echo ---
-for x in $USERIDS; do
-  echo "$DATA" | grep "\.$x~"
-  echo ---
-done
+echo "$DATA"
