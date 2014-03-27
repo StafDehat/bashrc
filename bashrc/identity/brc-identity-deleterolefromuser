@@ -6,22 +6,25 @@
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-identity-listrolesforuser [-a BRC_AUTHTOKEN] -u USERID"
+  echo "Usage: brc-identity-deleterolefromuser [-a BRC_AUTHTOKEN] -u USERID -r ROLEID"
   echo "Example:"
-  echo "  # brc-identity-listroles -a 88cfbaa8b22511e39b7d001c259f31af \\"
-  echo "  #                        -u cf03c840b20a11e3b30b10bf4840bf8d"
+  echo "  # brc-identity-addroletouser -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "  #                            -u cf03c840b20a11e3b30b10bf4840bf8d \\"
+  echo "  #                            -r 999999"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
   echo "  -h	Print this help"
-  echo "  -u X  ID of cloud user."
+  echo "  -r X	Role ID"
+  echo "  -u X	User ID"
 }
 
 USAGEFLAG=0
-while getopts ":hu:a:" arg; do
+while getopts ":hu:r:a:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     u) USERID=$OPTARG;;
+    r) ROLEID=$OPTARG;;
     h) usage && exit 0;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -36,7 +39,11 @@ if [ -z "$BRC_AUTHTOKEN" ]; then
   USAGEFLAG=1
 fi
 if [ -z "$USERID" ]; then
-  echo "ERROR: Must define USERID in environment or argument"
+  echo "ERROR: Must define USERID as argument"
+  USAGEFLAG=1
+fi
+if [ -z "$ROLEID" ]; then
+  echo "ERROR: Must define ROLEID as argument"
   USAGEFLAG=1
 fi
 
@@ -44,8 +51,10 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage &&exit 1 
 fi
 
-DATA=$(curl --write-out \\n%{http_code} --silent --output - \
-            $IDENTITY_ENDPOINT/users/$USERID/roles \
+
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+            $IDENTITY_ENDPOINT/users/$USERID/roles/OS-KSADM/$ROLEID \
+            -X DELETE \
             -H "Content-Type: application/json" \
             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
          2>/dev/null )
@@ -60,6 +69,4 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
 fi
 
 DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
-
-echo "$DATA"
-
+echo "Response code: $CODE"
