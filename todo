@@ -1,1 +1,3 @@
 Standardize argument flags (ie: -u for all usernames/ids)
+Fix usage errors so they correctly say "as argument" or "in environment or as argument"
+Add explicit exit status
