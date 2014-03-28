@@ -89,6 +89,6 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
   errornot200 $CODE $( echo "$DATA" | head -n -1 )
 fi
 
-DATA=$( echo "$DATA" | head -n -1 | brc-json.tool )
+DATA=$( echo "$DATA" | head -n -1 | brc-util-json.tool )
 
 echo "$DATA"

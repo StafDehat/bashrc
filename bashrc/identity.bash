@@ -7,7 +7,8 @@ ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
 #                          | sed 's/.*\(\/.*\).*$/\1/' )
 #fi
 
-if ! which brc-json.tool &>/dev/null; then
+if ! which brc-util-json.tool &>/dev/null; then
+  export BRCUTIL=$BASHRC_BASE/bashrc/util
   export PATH=$PATH:$BASHRC_BASE/bashrc/util
 fi
 

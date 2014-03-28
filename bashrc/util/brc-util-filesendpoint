@@ -1,0 +1,61 @@
+#!/bin/bash
+
+function usage() {
+  echo "Usage: brc-util-filesendpoint [-h] [-r BRC_REGION] [-i]"
+# Add internal/external
+  echo "Example:"
+  echo "  # brc-util-filesendpoint -r dfw \\"
+  echo "                           -i"
+  echo "Arguments:"
+  echo "  -h	Print this help."
+  echo "  -i    Use the internal network (Only available in same REGION)"
+  echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
+  echo "        the environment variable BRC_REGION instead of as an"
+  echo "        argument."
+}
+
+USAGEFLAG=0
+INTERNAL=0
+while getopts ":hr:i" arg; do
+  case $arg in
+    r) BRC_REGION=$OPTARG;;
+    i) INTERNAL=1;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_REGION" ]; then
+  echo "ERROR: Must define BRC_REGION in environment or argument"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+
+if [ $INTERNAL -eq 1 ]; then
+  ENDPOINT="https://snet-"
+else 
+  ENDPOINT="https://"
+fi
+
+BRC_REGION=$( echo "$BRC_REGION" | tr 'A-Z' 'a-z' )
+case $BRC_REGION in
+  ord) ENDPOINT="${ENDPOINT}storage101.ord1.clouddrive.com/v1";;
+  dfw) ENDPOINT="${ENDPOINT}storage101.dfw1.clouddrive.com/v1";;
+  hkg) ENDPOINT="${ENDPOINT}storage101.hkg1.clouddrive.com/v1";;
+  lon) ENDPOINT="${ENDPOINT}storage101.lon3.clouddrive.com/v1";;
+  iad) ENDPOINT="${ENDPOINT}storage101.iad3.clouddrive.com/v1";;
+  syd) ENDPOINT="${ENDPOINT}storage101.syd2.clouddrive.com/v1";;
+    *) echo "ERROR: Unrecognized REGION code." && exit 1;;
+esac
+
+echo "$ENDPOINT"
+
+exit 0
