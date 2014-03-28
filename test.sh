@@ -59,3 +59,5 @@ echo "Userid: $USERID"
 brc-identity-deleteuser -i $USERID
 
 
+# brc-identity-deleterolefromuser
+# brc-identity-listcredentials
