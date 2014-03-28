@@ -53,7 +53,7 @@ if [ -z "$BRC_REGION" ]; then
   USAGEFLAG=1
 fi
 if [ -z "$IMAGEID" ]; then
-  echo "ERROR: Must define IMAGEID in environment or argument"
+  echo "ERROR: Must define IMAGEID as argument"
   USAGEFLAG=1
 fi
 
@@ -71,7 +71,7 @@ IMAGE_ENDPOINT="https://$BRC_REGION.images.api.rackspacecloud.com/v2"
 # NOTE: Lots of hard-coded data in the request body.  Fix that.
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $IMAGE_ENDPOINT/tasks/$IMAGEID \
-             -X GET 
+             -X GET \
              -H "Accept: application/json" \
              -H "Content-Type: application/json" \
              -H "X-Auth-Token: $BRC_AUTHTOKEN" \
