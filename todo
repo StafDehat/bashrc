@@ -2,3 +2,4 @@ Standardize argument flags (ie: -u for all usernames/ids)
 Fix usage errors so they correctly say "as argument" or "in environment or as argument"
 Add explicit exit status
 Test cases for brc-identity-deleterolefromuser, brc-identity-listcredentials
+Remove all the hard-coded crap from the glance scripts
