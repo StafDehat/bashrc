@@ -44,7 +44,7 @@ if [ -z "$BRC_AUTHTOKEN" ]; then
   USAGEFLAG=1
 fi
 if [ -z "$NEWUSER" ]; then
-  echo "ERROR: Must define NEWUSER in environment or argument"
+  echo "ERROR: Must define NEWUSER as argument"
   USAGEFLAG=1
 fi
 if [ ! -z "$ENABLED" ]; then
@@ -90,4 +90,6 @@ fi
 DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
 
 echo "$DATA"
+
+exit 0
 

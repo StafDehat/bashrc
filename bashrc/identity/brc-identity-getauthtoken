@@ -76,7 +76,5 @@ EXPIRES=$( echo "$DATA" \
 echo "BRC_AUTHTOKEN=$AUTHTOKEN"
 echo "BRC_TENANTID=$TENANTID"
 echo "EXPIRES=$EXPIRES"
+
 exit 0
-
-
-

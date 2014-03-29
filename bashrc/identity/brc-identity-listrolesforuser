@@ -36,7 +36,7 @@ if [ -z "$BRC_AUTHTOKEN" ]; then
   USAGEFLAG=1
 fi
 if [ -z "$USERID" ]; then
-  echo "ERROR: Must define USERID in environment or argument"
+  echo "ERROR: Must define USERID as argument"
   USAGEFLAG=1
 fi
 
@@ -63,3 +63,4 @@ DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
 
 echo "$DATA"
 
+exit 0

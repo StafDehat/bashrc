@@ -36,7 +36,7 @@ if [ -z "$BRC_AUTHTOKEN" ]; then
   USAGEFLAG=1
 fi
 if [ -z "$USERID" ]; then
-  echo "ERROR: Must define USERID in environment or argument"
+  echo "ERROR: Must define USERID as argument"
   USAGEFLAG=1
 fi
 
@@ -61,3 +61,5 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
 fi
 
 echo "Response code: $CODE"
+
+exit 0

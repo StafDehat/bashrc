@@ -61,14 +61,9 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
-#
-# TEMPORARY:
 BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
-IMAGE_ENDPOINT="https://$BRC_REGION.images.api.rackspacecloud.com/v2"
-# :TEMPORARY
-#
+IMAGE_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
-# NOTE: Lots of hard-coded data in the request body.  Fix that.
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $IMAGE_ENDPOINT/tasks/$IMAGEID \
              -X GET \
@@ -91,4 +86,5 @@ fi
 
 DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
 
+exit 0
 echo "$DATA"
