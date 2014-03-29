@@ -1,2 +1,1 @@
-Test cases for brc-identity-deleterolefromuser, brc-identity-listcredentials
 Remove all the hard-coded crap from the glance scripts
