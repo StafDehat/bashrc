@@ -26,6 +26,15 @@ echo "Users:"
 USERS=$( brc-identity-listusers )
 echo "$USERS"
 
+# brc-identity-listcredentials
+echo
+echo "List credentials:"
+DATAID=$( echo "$USERS" | sed -n 's/.*~username\.\([0-9]*\)~'$BRC_USERNAME'$/\1/p' )
+echo "DATA ID: $DATAID"
+PRIMARYUSER=$( echo "$USERS" | awk -F \~ '$3 ~ /^id\.'$DATAID'$/ {print $4}' )
+echo "Primary: $PRIMARYUSER"
+brc-identity-listcredentials -u $PRIMARYUSER
+
 # brc-identity-listroles
 echo
 echo "Roles:"
@@ -52,12 +61,16 @@ echo "Listing roles for new user:"
 ROLES=$( brc-identity-listrolesforuser -u $USERID )
 echo "$ROLES"
 
+# brc-identity-deleterolefromuser
+echo
+echo "Deleting role from user:"
+brc-identity-deleterolefromuser -u $USERID -r $ROLEID
+echo "Done"
+
 # brc-identity-deleteuser
 echo 
 echo "Deleting user:"
 echo "Userid: $USERID"
-brc-identity-deleteuser -i $USERID
+brc-identity-deleteuser -u $USERID
 
 
-# brc-identity-deleterolefromuser
-# brc-identity-listcredentials
