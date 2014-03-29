@@ -6,22 +6,22 @@
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-identity-deleteuser [-h] [-a BRC_AUTHTOKEN] -i USERID"
+  echo "Usage: brc-identity-deleteuser [-h] [-a BRC_AUTHTOKEN] -u USERID"
   echo "Example:"
   echo "  # brc-identity-deleteuser -a 1a2b3c4d5e6f7g8h9i0j \\"
-  echo "  #                         -i 477f91eab3a111e3aa12f30ec4c95229"
+  echo "  #                         -u 477f91eab3a111e3aa12f30ec4c95229"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
   echo "  -h	Print this help"
-  echo "  -i X  ID of user to delete"
+  echo "  -u X  ID of user to delete"
 }
 
 USAGEFLAG=0
-while getopts ":ha:i:" arg; do
+while getopts ":ha:u:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
-    i) USERID=$OPTARG;;
+    u) USERID=$OPTARG;;
     h) usage && exit 0;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
