@@ -7,6 +7,10 @@ if which curl &>/dev/null -ne 0; then
   echo "ERROR: curl binary not found in PATH"
   ALLGOOD=0
 fi
+if which date &>/dev/null -ne 0; then
+  echo "ERROR: date binary not found in PATH"
+  ALLGOOD=0
+fi
 
 if [ $ALLGOOD -ne 1 ]; then
   echo "SDK not loaded.  Correct problems and try again."

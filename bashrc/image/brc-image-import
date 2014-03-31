@@ -101,5 +101,5 @@ fi
 
 DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
 
-exit 0
 echo "$DATA"
+exit 0
