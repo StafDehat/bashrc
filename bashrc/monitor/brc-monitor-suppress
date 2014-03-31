@@ -104,12 +104,12 @@ if [ -n "$NOTIFICATIONS" ]; then
   NOTIFICATIONS=$( echo $NOTIFICATIONS | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
 fi
 
-echo curl --write-out \\n%{http_code} --silent --output - \
-     $MONITOR_ENDPOINT/$BRC_TENANTID \
-     -X POST \
-     -H "Content-Type: application/json" \
-     -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-     -d '{ "notification_plans": ['$NOTIFICATIONS'],
+echo 'curl --write-out \\n%{http_code} --silent --output -'
+echo '     '$MONITOR_ENDPOINT'/'$BRC_TENANTID''
+echo '     -X POST'
+echo '     -H "Content-Type: application/json"'
+echo '    -H "X-Auth-Token: '$BRC_AUTHTOKEN'"'
+echo      -d '{ "notification_plans": ['$NOTIFICATIONS'],
            "entities": ['$ENTITIES'],
            "checks": ['$CHECKS'],
            "alarms": ['$ALARMS'],
