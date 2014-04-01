@@ -110,9 +110,7 @@ POSTDATA=$(
   fi
   echo -n '"start_time": '$STARTTIME', '
   echo -n '"end_time": '$ENDTIME' }'
-
 )
-echo "Postdata: $POSTDATA"
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $MONITOR_ENDPOINT/$BRC_TENANTID/suppressions \
              -X POST \
