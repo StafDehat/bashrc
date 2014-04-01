@@ -23,3 +23,4 @@ export BASHRC_BASE=$( echo "$ABSPATH" | sed 's/^\(.*\)\/.*$/\1/' )
 . $BASHRC_BASE/bashrc/identity.bash
 . $BASHRC_BASE/bashrc/image.bash
 . $BASHRC_BASE/bashrc/files.bash
+. $BASHRC_BASE/bashrc/monitor.bash

@@ -59,6 +59,5 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
 fi
 
 DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
-#DATA=$( echo "$DATA" | head -n -1 | python -m json.tool )
 
 echo "$DATA"
