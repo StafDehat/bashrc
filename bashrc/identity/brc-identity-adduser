@@ -58,7 +58,7 @@ if [ $USAGEFLAG -ne 0 ]; then
 fi
 
 
-REQUESTDATA=$(
+POSTDATA=$(
   echo -n '{ "user": { "username": "'$NEWUSER'"'
   if [ ! -z "$PASSWORD" ]; then
     echo -n ', "OS-KSADM:password": "'$PASSWORD'"'
@@ -75,7 +75,7 @@ DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $IDENTITY_ENDPOINT/users \
              -H "Content-Type: application/json" \
              -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-             -d "$REQUESTDATA" \
+             -d "$POSTDATA" \
           2>/dev/null )
 RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
