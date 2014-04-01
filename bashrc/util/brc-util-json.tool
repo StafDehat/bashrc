@@ -32,8 +32,6 @@ function docurlygroup() {
 
 # Handle whatever's inside the [ ] brackets
 function dosquaregroup() {
-  #echo "Doing a square group"
-  #echo "Prefix at start: $PREFIX"
   PREFIX=$1
   COUNT=0
   while read LINE; do
@@ -58,23 +56,16 @@ function dosquaregroup() {
            fi
            LASTLINE="$LINE";;
     esac
-    #LASTLINE="$LINE"
   done
 }
 
-#while read LINE; do
-#  if [ $( echo "$LINE" | grep -c "$PREFIX" ) -eq 0 ]; then
-#    echo $PREFIX
-#  fi
-#  PREFIX="$LINE"
-#done < <(
 cat \
   | sed -e's/":/"\n:\n/g' \
         -e's/{/\n{\n/g' \
         -e's/}/\n}\n/g' \
         -e's/\[/\n\[\n/g' \
         -e's/\]/\n\]\n/g' \
-        -e's/,//g' \
+        -e's/,/\n/g' \
   | grep -vE '^\s*$' \
   | while read LINE; do
     if [ "$LINE" == '{' ]; then
@@ -84,4 +75,3 @@ cat \
       echo "$LINE"
     fi
   done
-#)

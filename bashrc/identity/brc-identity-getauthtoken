@@ -45,7 +45,6 @@ if [ $USAGEFLAG -ne 0 ]; then
 fi
 
 
-#ENDPOINT=$IDENTITY_ENDPOINT
 DATA=$(curl --write-out \\n%{http_code} --silent --output - \
             $IDENTITY_ENDPOINT/tokens \
             -H "Content-Type: application/json" \
