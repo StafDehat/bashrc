@@ -87,49 +87,39 @@ fi
 #MONITOR_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
 # Convert to seconds-since-epoch
-STARTTIME=$( date +"%s" -d "$STARTTIME" )
-ENDTIME=$( date +"%s" -d "$ENDTIME" )
+STARTTIME=$( date +"%s" -d "$STARTTIME" )000
+ENDTIME=$( date +"%s" -d "$ENDTIME" )000
 
-# Get args into the proper format for JSON
-if [ -n "$ENTITIES" ]; then
-  ENTITIES=$( echo "$ENTITIES" | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
-fi
-if [ -n "$CHECKS" ]; then
-  CHECKS=$( echo "$CHECKS" | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
-fi
-if [ -n "$ALARMS" ]; then
-  ALARMS=$( echo "$ALARMS" | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
-fi
-if [ -n "$NOTIFICATIONS" ]; then
-  NOTIFICATIONS=$( echo $NOTIFICATIONS | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
-fi
+POSTDATA=$(
+  echo -n '{ '
+  if [ -n "$ENTITIES" ]; then
+    ENTITIES=$( echo "$ENTITIES" | sed -e "s/^ /\"/" -e "s/ /\", \"/g" -e "s/\s*$/\"/" )
+    echo -n '"entities": ['$ENTITIES'], '
+  fi
+  if [ -n "$CHECKS" ]; then
+    CHECKS=$( echo "$CHECKS" | sed -e "s/^ /\"/" -e "s/ /\", \"/g" -e "s/\s*$/\"/" )
+    echo -n '"checks": ['$CHECKS'], '
+  fi
+  if [ -n "$ALARMS" ]; then
+    ALARMS=$( echo "$ALARMS" | sed -e "s/^ /\"/" -e "s/ /\", \"/g" -e "s/\s*$/\"/" )
+    echo -n '"alarms": ['$ALARMS'], '
+  fi
+  if [ -n "$NOTIFICATIONS" ]; then
+    NOTIFICATIONS=$( echo $NOTIFICATIONS | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
+    echo -n '"notification_plans": ['$NOTIFICATIONS'], '
+  fi
+  echo -n '"start_time": '$STARTTIME', '
+  echo -n '"end_time": '$ENDTIME' }'
 
-echo 'curl --write-out \\n%{http_code} --silent --output -'
-echo '     '$MONITOR_ENDPOINT'/'$BRC_TENANTID''
-echo '     -X POST'
-echo '     -H "Content-Type: application/json"'
-echo '    -H "X-Auth-Token: '$BRC_AUTHTOKEN'"'
-echo      -d '{ "notification_plans": ['$NOTIFICATIONS'],
-           "entities": ['$ENTITIES'],
-           "checks": ['$CHECKS'],
-           "alarms": ['$ALARMS'],
-           "start_time": '$STARTTIME',
-           "end_time": '$ENDTIME' }'
-
-#DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-#             $MONITOR_ENDPOINT/$BRC_TENANTID \
-#             -X POST \
-#             -H "Content-Type: application/json" \
-#             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-#             -d '{ "notification_plans": ['"$NOTIFICATIONS"'],
-#                   "entities": ['"$ENTITIES"'],
-#                   "checks": ['"$CHECKS"'],
-#                   "alarms": ['"$ALARMS"'],
-#                   "start_time": '$STARTTIME',
-#                   "end_time": '$ENDTIME' }' \
-#          2>/dev/null )
+)
+echo "Postdata: $POSTDATA"
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             http://icanhazip.com/ 2>/dev/null )
+             $MONITOR_ENDPOINT/$BRC_TENANTID/suppressions \
+             -X POST \
+             -H "Content-Type: application/json" \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+             -d "$POSTDATA" \
+          2>/dev/null )
 RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
 
