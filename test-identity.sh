@@ -29,9 +29,9 @@ echo "$USERS"
 # brc-identity-listcredentials
 echo
 echo "List credentials:"
-DATAID=$( echo "$USERS" | sed -n 's/.*~username\.\([0-9]*\)~'$BRC_USERNAME'$/\1/p' )
+DATAID=$( echo "$USERS" | sed -n 's/bashrc~users~\([0-9]*\)~username~'$BRC_USERNAME'/\1/p' )
 echo "DATA ID: $DATAID"
-PRIMARYUSER=$( echo "$USERS" | awk -F \~ '$3 ~ /^id\.'$DATAID'$/ {print $4}' )
+PRIMARYUSER=$( echo "$USERS" | awk -F \~ '$3 ~ /^'$DATAID'$/ && $4 ~ /^id$/ {print $5}' )
 echo "Primary: $PRIMARYUSER"
 brc-identity-listcredentials -u $PRIMARYUSER
 
@@ -40,7 +40,7 @@ echo
 echo "Roles:"
 ROLES=$( brc-identity-listroles )
 echo "$ROLES"
-ROLEID=$( echo "$ROLES" | sed -n 's/^bashrc~roles~id\.1~//p' )
+ROLEID=$( echo "$ROLES" | sed -n 's/^bashrc~roles~0~id~//p' )
 
 # brc-identity-adduser
 echo
