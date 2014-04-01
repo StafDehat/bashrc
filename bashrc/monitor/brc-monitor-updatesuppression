@@ -1,0 +1,135 @@
+#!/bin/bash
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-monitor-updatesuppression [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
+  echo "                                     -i SUPPRESSIONID \\"
+  echo "                                     [-S STARTTIME] [-E ENDTIME] \\"
+  echo "                                     [-e EntityID [-e EntityID]] \\"
+  echo "                                     [-c CheckID [-c CheckID]] \\"
+  echo "                                     [-A AlarmID [-A AlarmID]] \\"
+  echo "                                     [-n NotificationID [-n NotificationID]]"
+  echo "Example:"
+  echo "  # brc-monitor-updatesuppression -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                                  -t 123456 \\"
+  echo "                                  -E \"2 hours\" \\"
+  echo "                                  -i spCQZQoM9y"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -A X  Pair of entity and alarm ID.  Can be specified multiple times."
+  echo "        Example: EntityID:AlarmID"
+  echo "  -c X  Pair of entity and check ID.  Can be specified multiple times."
+  echo "        Example: EntityID:CheckID"
+  echo "  -e X  Entity ID.  All monitors on specified entity will be suppressed."
+  echo "        Can be specified multiple times."
+  echo "  -E X  End time of suppression.  Takes any string that would work with"
+  echo "        'date -d'.  Example: -E friday, -E '5 hours'"
+  echo "  -h	Print this help"
+  echo "  -i X  Suppression ID."
+  echo "  -n X  Notification plan ID.  Can be specified multiple times."
+  echo "  -S X  Start time of suppression.  Takes any string that would work with"
+  echo "        'date -d'.  Example: -S now"
+  echo "  -t X	Tenant ID (DDI).  This can be set via the environment"
+  echo "        variable BRC_TENANTID instead of as an argument."
+}
+
+USAGEFLAG=0
+while getopts ":ha:t:e:c:A:n:S:E:i:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    A) ALARMS="$ALARMS $OPTARG";;
+    c) CHECKS="$CHECKS $OPTARG";;
+    e) ENTITIES="$ENTITIES $OPTARG";;
+    E) ENDTIME="$OPTARG";;
+    i) SUPPRESSIONID=$OPTARG;;
+    n) NOTIFICATIONS="$NOTIFICATIONS $OPTARG";;
+    S) STARTTIME="$OPTARG";;
+    t) BRC_TENANTID=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_AUTHTOKEN" ]; then
+  echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$BRC_TENANTID" ]; then
+  echo "ERROR: Must define BRC_TENANTID in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$SUPPRESSIONID" ]; then
+  echo "ERROR: Must define SUPPRESSIONID as argument"
+  USAGEFLAG=1
+fi
+# Ensure something was passed
+if [[ -z "$ENTITIES" &&
+      -z "$CHECKS" &&
+      -z "$ALARMS" &&
+      -z "$NOTIFICATIONS" &&
+      -z "$STARTTIME" &&
+      -z "$ENDTIME" ]]; then
+  echo "ERROR: Must specify at least one thing to update."
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+#MONITOR_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
+
+POSTDATA=$(
+  echo -n '{ '
+  if [ -n "$ENTITIES" ]; then
+    ENTITIES=$( echo "$ENTITIES" | sed -e "s/^ /\"/" -e "s/ /\", \"/g" -e "s/\s*$/\"/" )
+    echo -n '"entities": ['$ENTITIES'], '
+  fi
+  if [ -n "$CHECKS" ]; then
+    CHECKS=$( echo "$CHECKS" | sed -e "s/^ /\"/" -e "s/ /\", \"/g" -e "s/\s*$/\"/" )
+    echo -n '"checks": ['$CHECKS'], '
+  fi
+  if [ -n "$ALARMS" ]; then
+    ALARMS=$( echo "$ALARMS" | sed -e "s/^ /\"/" -e "s/ /\", \"/g" -e "s/\s*$/\"/" )
+    echo -n '"alarms": ['$ALARMS'], '
+  fi
+  if [ -n "$NOTIFICATIONS" ]; then
+    NOTIFICATIONS=$( echo $NOTIFICATIONS | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
+    echo -n '"notification_plans": ['$NOTIFICATIONS'], '
+  fi
+  if [ -n "$STARTTIME" ]; then
+    STARTTIME=$( date +"%s" -d "$STARTTIME" )000
+    echo -n '"start_time": '$STARTTIME', '
+  fi
+  if [ -n "$ENDTIME" ]; then
+    ENDTIME=$( date +"%s" -d "$ENDTIME" )000
+    echo -n '"end_time": '$ENDTIME', '
+  fi
+  echo ' }'
+)
+POSTDATA="${POSTDATA/,  \}/ }}"
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+             $MONITOR_ENDPOINT/$BRC_TENANTID/suppressions/$SUPPRESSIONID \
+             -X PUT \
+             -H "Content-Type: application/json" \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+             -d "$POSTDATA" \
+          2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+echo "Response code: $CODE"
+exit 0

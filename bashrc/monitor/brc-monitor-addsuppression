@@ -130,7 +130,8 @@ fi
 
 DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
 
-echo "$DATA"
+echo "Response code: $CODE"
 echo "Suppression begins: $( date -d @$STARTTIME )"
 echo "Suppression ends:   $( date -d @$ENDTIME )"
 exit 0
+
