@@ -1,0 +1,148 @@
+#!/bin/bash
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-monitor-addsuppression [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
+  echo "                                  -S STARTTIME -E ENDTIME \\"
+  echo "                                  [-e EntityID [-e EntityID]] \\"
+  echo "                                  [-c CheckID [-c CheckID]] \\"
+  echo "                                  [-A AlarmID [-A AlarmID]] \\"
+  echo "                                  [-n NotificationID [-n NotificationID]]"
+  echo "Example:"
+  echo "  # brc-monitor-addsuppression -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                               -t 123456 \\"
+  echo "                               -S \"2014-01-25 13:00:00 CST\" \\"
+  echo "                               -E \"6 hours\" \\"
+  echo "                               -e dbf5f362b8f811e3a3c21fd76cc332fb \\"
+  echo "                               -e e6f2c27cb8f811e396388bcf9ed02669"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -A X  Pair of entity and alarm ID.  Can be specified multiple times."
+  echo "        Example: EntityID:AlarmID"
+  echo "  -c X  Pair of entity and check ID.  Can be specified multiple times."
+  echo "        Example: EntityID:CheckID"
+  echo "  -e X  Entity ID.  All monitors on specified entity will be suppressed."
+  echo "        Can be specified multiple times."
+  echo "  -E X  End time of suppression.  Takes any string that would work with"
+  echo "        'date -d'.  Example: -E friday, -E '5 hours'"
+  echo "  -h	Print this help"
+  echo "  -n X  Notification plan ID.  Can be specified multiple times."
+  echo "  -S X  Start time of suppression.  Takes any string that would work with"
+  echo "        'date -d'.  Example: -S now"
+  echo "  -t X	Tenant ID (DDI).  This can be set via the environment"
+  echo "        variable BRC_TENANTID instead of as an argument."
+}
+
+USAGEFLAG=0
+while getopts ":ha:t:e:c:A:n:S:E:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    t) BRC_TENANTID=$OPTARG;;
+    e) ENTITIES="$ENTITIES $OPTARG";;
+    c) CHECKS="$CHECKS $OPTARG";;
+    A) ALARMS="$ALARMS $OPTARG";;
+    n) NOTIFICATIONS="$NOTIFICATIONS $OPTARG";;
+    S) STARTTIME="$OPTARG";;
+    E) ENDTIME="$OPTARG";;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_AUTHTOKEN" ]; then
+  echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$BRC_TENANTID" ]; then
+  echo "ERROR: Must define BRC_TENANTID in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$STARTTIME" ]; then
+  echo "ERROR: Must define STARTTIME as argument"
+  USAGEFLAG=1
+fi
+if [ -z "$ENDTIME" ]; then
+  echo "ERROR: Must define ENDTIME as argument"
+  USAGEFLAG=1
+fi
+# Ensure something was passed
+if [[ -z "$ENTITIES" &&
+      -z "$CHECKS" &&
+      -z "$ALARMS" &&
+      -z "$NOTIFICATIONS" ]]; then
+  echo "ERROR: Must specify at least one entity, check, alarm, or notification"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+#MONITOR_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
+
+# Convert to seconds-since-epoch
+STARTTIME=$( date +"%s" -d "$STARTTIME" )
+ENDTIME=$( date +"%s" -d "$ENDTIME" )
+
+# Get args into the proper format for JSON
+if [ -n "$ENTITIES" ]; then
+  ENTITIES=$( echo "$ENTITIES" | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
+fi
+if [ -n "$CHECKS" ]; then
+  CHECKS=$( echo "$CHECKS" | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
+fi
+if [ -n "$ALARMS" ]; then
+  ALARMS=$( echo "$ALARMS" | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
+fi
+if [ -n "$NOTIFICATIONS" ]; then
+  NOTIFICATIONS=$( echo $NOTIFICATIONS | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
+fi
+
+echo 'curl --write-out \\n%{http_code} --silent --output -'
+echo '     '$MONITOR_ENDPOINT'/'$BRC_TENANTID''
+echo '     -X POST'
+echo '     -H "Content-Type: application/json"'
+echo '    -H "X-Auth-Token: '$BRC_AUTHTOKEN'"'
+echo      -d '{ "notification_plans": ['$NOTIFICATIONS'],
+           "entities": ['$ENTITIES'],
+           "checks": ['$CHECKS'],
+           "alarms": ['$ALARMS'],
+           "start_time": '$STARTTIME',
+           "end_time": '$ENDTIME' }'
+
+#DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+#             $MONITOR_ENDPOINT/$BRC_TENANTID \
+#             -X POST \
+#             -H "Content-Type: application/json" \
+#             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+#             -d '{ "notification_plans": ['"$NOTIFICATIONS"'],
+#                   "entities": ['"$ENTITIES"'],
+#                   "checks": ['"$CHECKS"'],
+#                   "alarms": ['"$ALARMS"'],
+#                   "start_time": '$STARTTIME',
+#                   "end_time": '$ENDTIME' }' \
+#          2>/dev/null )
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+             http://icanhazip.com/ 2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+
+echo "$DATA"
+echo "Suppression begins: $( date -d @$STARTTIME )"
+echo "Suppression ends:   $( date -d @$ENDTIME )"
+exit 0

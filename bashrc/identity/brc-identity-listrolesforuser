@@ -1,24 +1,27 @@
 #!/bin/bash
 
 #
-# List all users on the given cloud account
+# List available roles on the given cloud account
 
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-identity-listusers [-h] [-a BRC_AUTHTOKEN]"
+  echo "Usage: brc-identity-listrolesforuser [-a BRC_AUTHTOKEN] -u USERID"
   echo "Example:"
-  echo "  # brc-identity-listusers -a 1a2b3c4d5e6f7g8h9i0j"
+  echo "  # brc-identity-listroles -a 88cfbaa8b22511e39b7d001c259f31af \\"
+  echo "  #                        -u cf03c840b20a11e3b30b10bf4840bf8d"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
   echo "  -h	Print this help"
+  echo "  -u X  ID of cloud user."
 }
 
 USAGEFLAG=0
-while getopts ":ha:" arg; do
+while getopts ":hu:a:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
+    u) USERID=$OPTARG;;
     h) usage && exit 0;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -32,16 +35,20 @@ if [ -z "$BRC_AUTHTOKEN" ]; then
   echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
   USAGEFLAG=1
 fi
-
-if [ $USAGEFLAG -ne 0 ]; then
-  usage && exit 1
+if [ -z "$USERID" ]; then
+  echo "ERROR: Must define USERID as argument"
+  USAGEFLAG=1
 fi
 
-DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             $IDENTITY_ENDPOINT/users \
-             -H "Content-Type: application/json" \
-             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-          2>/dev/null )
+if [ $USAGEFLAG -ne 0 ]; then
+  usage &&exit 1 
+fi
+
+DATA=$(curl --write-out \\n%{http_code} --silent --output - \
+            $IDENTITY_ENDPOINT/users/$USERID/roles \
+            -H "Content-Type: application/json" \
+            -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+         2>/dev/null )
 RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
 

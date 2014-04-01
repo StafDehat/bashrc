@@ -1,24 +1,30 @@
 #!/bin/bash
 
 #
-# List all users on the given cloud account
+# List available roles on the given cloud account
 
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-identity-listusers [-h] [-a BRC_AUTHTOKEN]"
+  echo "Usage: brc-identity-addroletouser [-a BRC_AUTHTOKEN] -u USERID -r ROLEID"
   echo "Example:"
-  echo "  # brc-identity-listusers -a 1a2b3c4d5e6f7g8h9i0j"
+  echo "  # brc-identity-addroletouser -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "  #                            -u cf03c840b20a11e3b30b10bf4840bf8d \\"
+  echo "  #                            -r 999999"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
   echo "  -h	Print this help"
+  echo "  -r X	Role ID"
+  echo "  -u X	User ID"
 }
 
 USAGEFLAG=0
-while getopts ":ha:" arg; do
+while getopts ":hu:r:a:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
+    u) USERID=$OPTARG;;
+    r) ROLEID=$OPTARG;;
     h) usage && exit 0;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -32,16 +38,26 @@ if [ -z "$BRC_AUTHTOKEN" ]; then
   echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
   USAGEFLAG=1
 fi
-
-if [ $USAGEFLAG -ne 0 ]; then
-  usage && exit 1
+if [ -z "$USERID" ]; then
+  echo "ERROR: Must define USERID as argument"
+  USAGEFLAG=1
+fi
+if [ -z "$ROLEID" ]; then
+  echo "ERROR: Must define ROLEID as argument"
+  USAGEFLAG=1
 fi
 
+if [ $USAGEFLAG -ne 0 ]; then
+  usage &&exit 1 
+fi
+
+
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             $IDENTITY_ENDPOINT/users \
-             -H "Content-Type: application/json" \
-             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-          2>/dev/null )
+            $IDENTITY_ENDPOINT/users/$USERID/roles/OS-KSADM/$ROLEID \
+            -X PUT \
+            -H "Content-Type: application/json" \
+            -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+         2>/dev/null )
 RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
 
@@ -52,8 +68,6 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
   errornot200 $CODE $( echo "$DATA" | head -n -1 )
 fi
 
-DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
-
-echo "$DATA"
+echo "Response code: $CODE"
 
 exit 0

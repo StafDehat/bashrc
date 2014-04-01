@@ -1,0 +1,105 @@
+#!/bin/bash
+
+#
+# Import an image from local file to Rackspace Cloud
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-image-import [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
+  echo "                        [-r BRC_REGION] -f IMAGEFILE"
+  echo "Example:"
+  echo "  # brc-image-import -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                     -t 123456 \\"
+  echo "                     -r dfw \\"
+  echo "                     -f /home/test/centos.vhd"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -h	Print this help"
+  echo "  -f X  Local path to VHD file of image to import."
+  echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
+  echo "        the environment variable BRC_REGION instead of as an"
+  echo "        argument."
+  echo "  -t X	Tenant ID (DDI).  This can be set via the environment"
+  echo "        variable BRC_TENANTID instead of as an argument."
+}
+
+USAGEFLAG=0
+while getopts ":ha:t:r:f:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    f) IMAGEFILE=$OPTARG;;
+    r) BRC_REGION=$OPTARG;;
+    t) BRC_TENANTID=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_AUTHTOKEN" ]; then
+  echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$BRC_TENANTID" ]; then
+  echo "ERROR: Must define BRC_TENANTID in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$BRC_REGION" ]; then
+  echo "ERROR: Must define BRC_REGION in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$IMAGEFILE" ]; then
+  echo "ERROR: Must define IMAGEFILE as argument"
+  USAGEFLAG=1
+elif [ ! -f "$IMAGEFILE" ]; then
+  echo "ERROR: Specified IMAGEFILE does not exist"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
+IMAGE_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
+
+# NOTE: Lots of hard-coded data in the request body.  Fix that.
+# Currently only supports VHD format - keep hardcoded
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+             $IMAGE_ENDPOINT/tasks \
+             -X POST \
+             -H "Content-Type: application/json" \
+             -H "Accept: application/json" \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+             -H "X-Auth-Project-Id: $TENANTID" \
+             -H "X-Tenant-Id: $TENANTID" \
+             -H "X-User-Id: $TENANTID" \
+             -d '{ "type": "import",
+                   "input": {
+                     "import_from": "'$IMAGEFILE'", 
+                     "import_from_format": "vhd", 
+                     "image_properties" : {
+                       "name": "Custom CentOS 6.5 v1", 
+                       "org.openstack__1__os_distro": "org.centos", 
+                       "org.openstack__1__architecture": "x64", 
+                       "org.openstack__1__os_version": "6.5" } } }' \
+          2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+
+echo "$DATA"
+exit 0

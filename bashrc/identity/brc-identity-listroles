@@ -1,18 +1,18 @@
 #!/bin/bash
 
 #
-# List all users on the given cloud account
+# List available roles on the given cloud account
 
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-identity-listusers [-h] [-a BRC_AUTHTOKEN]"
+  echo "Usage: brc-identity-listroles [-a BRC_AUTHTOKEN] [-h]"
   echo "Example:"
-  echo "  # brc-identity-listusers -a 1a2b3c4d5e6f7g8h9i0j"
+  echo "  # brc-identity-listroles -a 1a2b3c4d5e6f7g8h9i0j"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
-  echo "  -h	Print this help"
+  echo "  -h	Print this help."
 }
 
 USAGEFLAG=0
@@ -37,8 +37,8 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
-DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             $IDENTITY_ENDPOINT/users \
+DATA=$(curl --write-out \\n%{http_code} --silent --output - \
+            $IDENTITY_ENDPOINT/OS-KSADM/roles \
              -H "Content-Type: application/json" \
              -H "X-Auth-Token: $BRC_AUTHTOKEN" \
           2>/dev/null )
