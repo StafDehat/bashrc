@@ -3,12 +3,10 @@
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-monitor-listsuppressions [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
-  echo "                                    -i SUPPRESSIONID"
+  echo "Usage: brc-monitor-listsuppressions [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID]"
   echo "Example:"
   echo "  # brc-monitor-listsuppressions -a 1a2b3c4d5e6f7g8h9i0j \\"
-  echo "                                 -t 123456 \\"
-  echo "                                 -i e6f2c27cb8f811e396388bcf9ed02669"
+  echo "                                 -t 123456"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
@@ -18,7 +16,7 @@ function usage() {
 }
 
 USAGEFLAG=0
-while getopts ":ha:t:i:" arg; do
+while getopts ":ha:t:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     t) BRC_TENANTID=$OPTARG;;
