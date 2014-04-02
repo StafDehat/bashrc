@@ -87,8 +87,8 @@ fi
 #MONITOR_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
 # Convert to seconds-since-epoch
-STARTTIME=$( date +"%s" -d "$STARTTIME" )000
-ENDTIME=$( date +"%s" -d "$ENDTIME" )000
+STARTTIME=$( date +"%s" -d "$STARTTIME" )
+ENDTIME=$( date +"%s" -d "$ENDTIME" )
 
 POSTDATA=$(
   echo -n '{ '
@@ -108,8 +108,8 @@ POSTDATA=$(
     NOTIFICATIONS=$( echo $NOTIFICATIONS | sed -e "s/^ /'/" -e "s/ /\', \'/g" -e "s/\s*$/'/" )
     echo -n '"notification_plans": ['$NOTIFICATIONS'], '
   fi
-  echo -n '"start_time": '$STARTTIME', '
-  echo -n '"end_time": '$ENDTIME' }'
+  echo -n '"start_time": '$STARTTIME'000, '
+  echo -n '"end_time": '$ENDTIME'000 }'
 )
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $MONITOR_ENDPOINT/$BRC_TENANTID/suppressions \
