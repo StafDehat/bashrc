@@ -128,9 +128,15 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
   errornot200 $CODE $( echo "$DATA" | head -n -1 )
 fi
 
-DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+DATA=$( brc-monitor-listsuppressions -a $BRC_AUTHTOKEN -t $BRC_TENANTID )
+RESPONSEID=$( echo "$DATA" \
+                | grep -e '^bashrc~values~[0-9]*~end_time~'${ENDTIME}000'$' \
+                | awk -F \~ '{print $3}' )
+SUPPRESSIONID=$( echo "$DATA" \
+                   | sed -n 's/^bashrc~values~'$RESPONSEID'~id~//p' )
 
 echo "Response code: $CODE"
+echo "Suppression ID:     $SUPPRESSIONID"
 echo "Suppression begins: $( date -d @$STARTTIME )"
 echo "Suppression ends:   $( date -d @$ENDTIME )"
 exit 0
