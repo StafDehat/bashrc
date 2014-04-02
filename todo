@@ -1,2 +1,3 @@
 Remove all the hard-coded crap from the glance scripts
 Make authtoken a capital A and TenantID a capital T.  Do Region R too.
+Learn github markup and make my README.md not look like crap
