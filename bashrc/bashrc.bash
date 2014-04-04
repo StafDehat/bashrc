@@ -3,23 +3,14 @@
 ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
 
 ALLGOOD=1
-if which curl &>/dev/null -ne 0; then
-  echo "ERROR: 'curl' binary not found in PATH"
-  ALLGOOD=0
-fi
-if which date &>/dev/null -ne 0; then
-  echo "ERROR: 'date' binary not found in PATH"
-  ALLGOOD=0
-fi
-if which sed &>/dev/null -ne 0; then
-  echo "ERROR: 'sed' binary not found in PATH"
-  ALLGOOD=0
-fi
-which awk &>/dev/null
-if [ $? -ne 0 ]; then
-  echo "ERROR: 'awk' binary not found in PATH"
-  ALLGOOD=0
-fi
+
+for COMMAND in curl date sed awk; do
+  which $COMMAND &>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "ERROR: '$COMMAND' binary not found in PATH"
+    ALLGOOD=0
+  fi
+done
 
 if [ $ALLGOOD -ne 1 ]; then
   echo "SDK not loaded.  Correct problems and try again."
