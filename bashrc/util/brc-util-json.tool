@@ -6,6 +6,8 @@ LASTLINE="bashrc"
 PREFIX="bashrc"
 EXITLEVELS=0
 
+
+# Handle a single item from this list/array
 function dolineitem() {
   local PREFIX=$1
   while read LINE; do
@@ -32,6 +34,7 @@ function dolineitem() {
   done
 }
 
+
 # Handle whatever's inside the { } brackets
 function docurlygroup() {
   local PREFIX=$1
@@ -43,6 +46,7 @@ function docurlygroup() {
     fi
   done
 }
+
 
 # Handle whatever's inside the [ ] brackets
 function dosquaregroup() {
@@ -59,6 +63,13 @@ function dosquaregroup() {
   done
 }
 
+
+while read LINE; do
+  if [ $( echo "$PREFIX" | grep -c "$LINE" ) -eq 0 ]; then
+    echo "$LINE"
+  fi
+  PREFIX="$LINE"
+done < <(
 cat \
   | sed -e's/":/"\n/g' \
   | sed -e's/{/\n{\n/g' \
@@ -71,3 +82,4 @@ cat \
   | while read LINE; do
     dolineitem $PREFIX
   done
+)
