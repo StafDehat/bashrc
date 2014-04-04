@@ -25,10 +25,11 @@ function dolineitem() {
         return;;
       '}'|']' ) # Line terminators that also terminate a group
         LASTLINE="$LINE"
-        EXITLEVELS=$(( $EXITLEVELS + 1 ))
+        EXITLEVELS=1
         echo "$PREFIX"
         return;;
       * ) #Values & Assignment
+        LASTLINE="$LINE"
         PREFIX="$PREFIX~$LINE";;
     esac
   done
@@ -41,7 +42,7 @@ function docurlygroup() {
   while true; do
     dolineitem "$PREFIX"
     if [ "$EXITLEVELS" -ne 0 ]; then
-      EXITLEVELS=$(( $EXITLEVELS - 1 ))
+      EXITLEVELS=0
       return
     fi
   done
@@ -52,7 +53,6 @@ function docurlygroup() {
 function dosquaregroup() {
   local PREFIX=$1
   local COUNT=0
-  local PREFIX=$1
   while true; do
     dolineitem "$PREFIX~$COUNT"
     COUNT=$(( $COUNT + 1 ))
@@ -70,16 +70,17 @@ while read LINE; do
   fi
   PREFIX="$LINE"
 done < <(
-cat \
-  | sed -e's/":/"\n/g' \
-  | sed -e's/{/\n{\n/g' \
-  | sed -e's/}/\n}\n/g' \
-  | sed -e's/\[/\n\[\n/g' \
-  | sed -e's/\]/\n\]\n/g' \
-  | sed -e's/,/\n,\n/g' \
-  | sed -e's/^\s*//' \
-  | grep -vE '^\s*$' \
-  | while read LINE; do
-    dolineitem $PREFIX
-  done
+
+  dolineitem $PREFIX < <(
+  cat \
+    | sed -e's/":/"\n/g' \
+    | sed -e's/{/\n{\n/g' \
+    | sed -e's/}/\n}\n/g' \
+    | sed -e's/\[/\n\[\n/g' \
+    | sed -e's/\]/\n\]\n/g' \
+    | sed -e's/,/\n,\n/g' \
+    | sed -e's/^\s*//' \
+    | grep -vE '^\s*$'
+  )
+
 )

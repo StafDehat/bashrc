@@ -128,19 +128,8 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
   errornot200 $CODE $( echo "$DATA" | head -n -1 )
 fi
 
-# Listsuppressions only shows obtuse timestamps and a previously-unmentioned
-# ID, so even though I hate running the list call here, it's the only way
-# to effectively know which suppression you just created (ie: test aagainst
-# timestamps before you discard ENDTIME).
-DATA=$( brc-monitor-listsuppressions -a $BRC_AUTHTOKEN -t $BRC_TENANTID )
-RESPONSEID=$( echo "$DATA" \
-                | grep -e '^bashrc~values~[0-9]*~end_time~'${ENDTIME}000'$' \
-                | awk -F \~ '{print $3}' )
-SUPPRESSIONID=$( echo "$DATA" \
-                   | sed -n 's/^bashrc~values~'$RESPONSEID'~id~//p' )
-
+echo "$DATA"
 echo "Response code: $CODE"
-echo "Suppression ID:     $SUPPRESSIONID"
 echo "Suppression begins: $( date -d @$STARTTIME )"
 echo "Suppression ends:   $( date -d @$ENDTIME )"
 exit 0
