@@ -5,7 +5,7 @@ PREFIX="bashrc"
 
 # Handle whatever's inside the { } brackets
 function docurlygroup() {
-  PREFIX=$1
+  local PREFIX=$1
   while read LINE; do
     LINE=$( echo "$LINE" | tr -d '"' )
     case $LINE in
@@ -32,8 +32,8 @@ function docurlygroup() {
 
 # Handle whatever's inside the [ ] brackets
 function dosquaregroup() {
-  PREFIX=$1
-  COUNT=0
+  local PREFIX=$1
+  local COUNT=0
   while read LINE; do
     LINE=$( echo "$LINE" | tr -d '"' )
     case $LINE in
@@ -67,6 +67,7 @@ cat \
         -e's/\]/\n\]\n/g' \
         -e's/,/\n/g' \
   | grep -vE '^\s*$' \
+  | sed -e's/^\s*//' \
   | while read LINE; do
     if [ "$LINE" == '{' ]; then
       docurlygroup $PREFIX
