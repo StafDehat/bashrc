@@ -1,32 +1,46 @@
 #!/bin/bash
 
+# EXITLEVELS is still buggy - it's not local-scope enough
+
 LASTLINE="bashrc"
 PREFIX="bashrc"
+EXITLEVELS=0
 
-# Handle whatever's inside the { } brackets
-function docurlygroup() {
+function dolineitem() {
   local PREFIX=$1
   while read LINE; do
     LINE=$( echo "$LINE" | tr -d '"' )
     case $LINE in
-      '{') LASTLINE="$LINE"
-           docurlygroup $PREFIX;;
-      '}') # Note: We're relying on greedy sed here to only trim the last tree node
-           PREFIX=$( echo "$PREFIX" | sed 's/^\(.*\)~.*$/\1/' )
-           LASTLINE="$LINE"
-           return;;
-      '[') LASTLINE="$LINE"
-           dosquaregroup $PREFIX;;
-      ']') echo "ERROR: Thought we were in a {} group but encountered ']'."
-           exit 1;;
-      ':') PREFIX="$PREFIX~$LASTLINE"
-           LASTLINE="$LINE";;
-      *)   if [ "$LASTLINE" == ':' ]; then
-             echo "$PREFIX~$LINE"
-             PREFIX=$( echo "$PREFIX" | sed 's/^\(.*\)~.*$/\1/' )
-           fi
-           LASTLINE="$LINE";;
+      '{' ) # Start a list
+        LASTLINE="$LINE"
+        docurlygroup $PREFIX;;
+      '[' ) # Start an array
+        LASTLINE="$LINE"
+        dosquaregroup $PREFIX;;
+      ',' ) #Line Terminator
+        LASTLINE="$LINE"
+        echo "$PREFIX"
+        return;;
+      '}'|']' ) # Line terminators that also terminate a group
+        LASTLINE="$LINE"
+        EXITLEVELS=$(( $EXITLEVELS + 1 ))
+        echo "$PREFIX"
+        return;;
+      * ) #Values & Assignment
+        PREFIX="$PREFIX~$LINE";;
     esac
+  done
+}
+
+# Handle whatever's inside the { } brackets
+function docurlygroup() {
+  local PREFIX=$1
+  while true; do
+    dolineitem "$PREFIX"
+    if [ "$EXITLEVELS" -ne 0 ]; then
+      EXITLEVELS=$(( $EXITLEVELS - 1 ))
+      return
+    fi
   done
 }
 
@@ -34,45 +48,26 @@ function docurlygroup() {
 function dosquaregroup() {
   local PREFIX=$1
   local COUNT=0
-  while read LINE; do
-    LINE=$( echo "$LINE" | tr -d '"' )
-    case $LINE in
-      '{') LASTLINE="$LINE"
-           docurlygroup "$PREFIX~$COUNT"
-           COUNT=$(( $COUNT + 1 ));;
-      '}') echo "ERROR: Thought we were in a [] group but encountered '}'."
-           exit 1;;
-      '[') LASTLINE="$LINE"
-           dosquaregroup $PREFIX;;
-      ']') # Note: We're relying on greedy sed here to only trim the last tree node
-           PREFIX=$( echo "$PREFIX" | sed 's/^\(.*\)~.*$/\1/' )
-           LASTLINE="$LINE"
-           return;;
-      ':') PREFIX="$PREFIX~$COUNT~$LASTLINE"
-           COUNT=$(( $COUNT + 1 ))
-           LASTLINE="$LINE";;
-      *)   if [ "$LASTLINE" == ':' ]; then
-             echo "$PREFIX~$LINE"
-           fi
-           LASTLINE="$LINE";;
-    esac
+  local PREFIX=$1
+  while true; do
+    dolineitem "$PREFIX~$COUNT"
+    COUNT=$(( $COUNT + 1 ))
+    if [ "$EXITLEVELS" -ne 0 ]; then
+      EXITLEVELS=$(( $EXITLEVELS - 1 ))
+      return
+    fi
   done
 }
 
 cat \
-  | sed -e's/":/"\n:\n/g' \
-        -e's/{/\n{\n/g' \
-        -e's/}/\n}\n/g' \
-        -e's/\[/\n\[\n/g' \
-        -e's/\]/\n\]\n/g' \
-        -e's/,/\n/g' \
-  | grep -vE '^\s*$' \
+  | sed -e's/":/"\n/g' \
+  | sed -e's/{/\n{\n/g' \
+  | sed -e's/}/\n}\n/g' \
+  | sed -e's/\[/\n\[\n/g' \
+  | sed -e's/\]/\n\]\n/g' \
+  | sed -e's/,/\n,\n/g' \
   | sed -e's/^\s*//' \
+  | grep -vE '^\s*$' \
   | while read LINE; do
-    if [ "$LINE" == '{' ]; then
-      docurlygroup $PREFIX
-    else
-      echo "ERROR: This isn't json"
-      echo "$LINE"
-    fi
+    dolineitem $PREFIX
   done
