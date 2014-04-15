@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # EXITLEVELS is still buggy - it's not local-scope enough
+# Edit: On second thought, it's probably only possible to hit EXITLEVELS>0
+#   at the tail of a construct, so it should implicitly be local enough.
 
 LASTLINE="bashrc"
 PREFIX="bashrc"
@@ -70,17 +72,52 @@ while read LINE; do
   fi
   PREFIX="$LINE"
 done < <(
-
   dolineitem $PREFIX < <(
-  cat \
-    | sed -e's/":/"\n/g' \
-    | sed -e's/{/\n{\n/g' \
-    | sed -e's/}/\n}\n/g' \
-    | sed -e's/\[/\n\[\n/g' \
-    | sed -e's/\]/\n\]\n/g' \
-    | sed -e's/,/\n,\n/g' \
-    | sed -e's/^\s*//' \
-    | grep -vE '^\s*$'
+  ESCAPED=0
+  INQUOTE=0
+  LINE=""
+  cat | 
+    sed 's/\\/\\\\/g' | #This sed is required because "read" strips escape characters
+    while read -n 1 CHAR; do
+      if [ "$ESCAPED" -eq 1 ]; then
+        LINE="$LINE\\$CHAR"
+        ESCAPED=0
+      elif [ "$INQUOTE" -eq 1 ]; then
+        case "$CHAR" in
+          ("\\")
+            ESCAPED=1
+          ;;
+          ('"')
+            LINE="$LINE$CHAR"
+            INQUOTE=0
+          ;;
+          (*)
+            LINE="$LINE$CHAR"
+          ;;
+        esac
+      else #INQUOTE=0
+        case "$CHAR" in
+          ("\\")
+            ESCAPED=1
+          ;;
+          ('"')
+            INQUOTE=1
+            LINE="$LINE$CHAR"
+          ;;
+          ('{'|'}'|'['|']'|',')
+            echo "$LINE"
+            LINE=""
+            echo "$CHAR"
+          ;;
+          (':')
+            echo "$LINE"
+            LINE=""
+          ;;
+          (*)
+            LINE="$LINE$CHAR"
+          ;;
+        esac
+      fi
+    done | grep -vE '^\s*$'
   )
-
 )
