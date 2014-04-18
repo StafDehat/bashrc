@@ -7,7 +7,7 @@
 
 function usage() {
   echo "Usage: brc-image-import [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
-  echo "                        [-r BRC_REGION] -f IMAGEFILE"
+  echo "                        [-n IMAGENAME] [-r BRC_REGION] -f IMAGEFILE"
   echo "Example:"
   echo "  # brc-image-import -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "                     -t 123456 \\"
@@ -18,6 +18,8 @@ function usage() {
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
   echo "  -h	Print this help"
   echo "  -f X  Local path to VHD file of image to import."
+  echo "  -n X  Image name.  If excluded, will just use the filename from"
+  echo "        IMAGEFILE argument."
   echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
   echo "        the environment variable BRC_REGION instead of as an"
   echo "        argument."
@@ -26,10 +28,11 @@ function usage() {
 }
 
 USAGEFLAG=0
-while getopts ":ha:t:r:f:" arg; do
+while getopts ":ha:n:t:r:f:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     f) IMAGEFILE=$OPTARG;;
+    n) IMAGENAME=$OPTARG;;
     r) BRC_REGION=$OPTARG;;
     t) BRC_TENANTID=$OPTARG;;
     h) usage && exit 0;;
@@ -65,10 +68,13 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
+if [ -z "$IMAGENAME" ]; then
+  IMAGENAME=$( basename $IMAGEFILE )
+fi
+
 BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
 IMAGE_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
-# NOTE: Lots of hard-coded data in the request body.  Fix that.
 # Currently only supports VHD format - keep hardcoded
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              $IMAGE_ENDPOINT/tasks \
@@ -81,13 +87,10 @@ DATA=$( curl --write-out \\n%{http_code} --silent --output - \
              -H "X-User-Id: $TENANTID" \
              -d '{ "type": "import",
                    "input": {
-                     "import_from": "'$IMAGEFILE'", 
+                     "import_from": "'$IMAGEFILE'",
                      "import_from_format": "vhd", 
-                     "image_properties" : {
-                       "name": "Custom CentOS 6.5 v1", 
-                       "org.openstack__1__os_distro": "org.centos", 
-                       "org.openstack__1__architecture": "x64", 
-                       "org.openstack__1__os_version": "6.5" } } }' \
+                     "image_properties": {
+                       "name": "'$IMAGENAME'" } } }' \
           2>/dev/null )
 RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
