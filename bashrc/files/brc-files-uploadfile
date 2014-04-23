@@ -1,0 +1,80 @@
+#!/bin/bash
+
+#
+# Upload a file to Cloud Files.  If it's over 4GB, split into 1GB chunks.
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-files-uploadfile [-h] [-a BRC_AUTHTOKEN] [-r BRC_REGION] \\"
+  echo "Example:"
+  echo "  # brc-files-uploadfile -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                         -r dfw"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -h	Print this help"
+  echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
+  echo "        the environment variable BRC_REGION instead of as an"
+  echo "        argument."
+}
+
+USAGEFLAG=0
+while getopts ":ha:r:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    r) BRC_REGION=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_AUTHTOKEN" ]; then
+  echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$BRC_REGION" ]; then
+  echo "ERROR: Must define BRC_REGION in environment or argument"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
+FILES_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
+
+
+#
+# Test the source file.
+# If > 4G then split & upload each piece individually, then create a dynamic manifest
+# http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
+#
+
+
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+             $FILES_ENDPOINT \
+             -X PUT \
+             -H "Accept: application/json" \
+             -H "Content-Type: application/json" \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+          2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+
+echo "$DATA"
+exit 0
