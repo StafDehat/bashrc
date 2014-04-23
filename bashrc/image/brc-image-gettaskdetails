@@ -6,7 +6,7 @@
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-image-gettaskdetails [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID]"
+  echo "Usage: brc-image-gettaskdetails [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
   echo "                                [-r BRC_REGION] -i TASKID"
   echo "Example:"
   echo "  # brc-image-gettaskdetails -a 1a2b3c4d5e6f7g8h9i0j \\"

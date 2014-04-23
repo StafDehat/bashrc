@@ -6,12 +6,12 @@
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-image-listtasks [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
-  echo "                           [-r BRC_REGION]"
+  echo "Usage: brc-image-getimagedetails [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
+  echo "                                 [-r BRC_REGION] -i IMAGEID"
   echo "Example:"
-  echo "  # brc-image-listtasks -a 1a2b3c4d5e6f7g8h9i0j \\"
-  echo "                        -t 123456 \\"
-  echo "                        -r dfw"
+  echo "  # brc-image-listimages -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                         -t 123456 \\"
+  echo "                         -r dfw"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
@@ -59,7 +59,7 @@ BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
 IMAGE_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             $IMAGE_ENDPOINT/tasks \
+             $IMAGE_ENDPOINT/images \
              -X GET \
              -H "Accept: application/json" \
              -H "Content-Type: application/json" \
