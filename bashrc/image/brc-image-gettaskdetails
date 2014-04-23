@@ -6,13 +6,13 @@
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-image-listtasks [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID]"
-  echo "                           [-r BRC_REGION] -i TASKID"
+  echo "Usage: brc-image-gettaskdetails [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID]"
+  echo "                                [-r BRC_REGION] -i TASKID"
   echo "Example:"
-  echo "  # brc-image-listtasks -a 1a2b3c4d5e6f7g8h9i0j \\"
-  echo "                        -t 123456 \\"
-  echo "                        -r dfw \\"
-  echo "                        -i 06e703aa-cafa-11e3-896f-a7205d4b6a15"
+  echo "  # brc-image-gettaskdetails -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                             -t 123456 \\"
+  echo "                             -r dfw \\"
+  echo "                             -i 06e703aa-cafa-11e3-896f-a7205d4b6a15"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
