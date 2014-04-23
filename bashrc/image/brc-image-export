@@ -69,10 +69,6 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
-if [ -z "$IMAGENAME" ]; then
-  IMAGENAME=$( basename $IMAGEFILE )
-fi
-
 BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
 IMAGE_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
