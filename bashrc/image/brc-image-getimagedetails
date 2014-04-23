@@ -9,13 +9,15 @@ function usage() {
   echo "Usage: brc-image-getimagedetails [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
   echo "                                 [-r BRC_REGION] -i IMAGEID"
   echo "Example:"
-  echo "  # brc-image-listimages -a 1a2b3c4d5e6f7g8h9i0j \\"
-  echo "                         -t 123456 \\"
-  echo "                         -r dfw"
+  echo "  # brc-image-getimagedetails -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                              -t 123456 \\"
+  echo "                              -r dfw \\"
+  echo "                              -i e5576a8c-cafd-11e3-8efc-af2ba969cd6f"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
   echo "  -h	Print this help"
+  echo "  -i X  Image ID."
   echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
   echo "        the environment variable BRC_REGION instead of as an"
   echo "        argument."
@@ -24,11 +26,12 @@ function usage() {
 }
 
 USAGEFLAG=0
-while getopts ":ha:t:r:" arg; do
+while getopts ":ha:t:r:i:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     r) BRC_REGION=$OPTARG;;
     t) BRC_TENANTID=$OPTARG;;
+    i) IMAGEID=$OPTARG;;
     h) usage && exit 0;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -50,6 +53,10 @@ if [ -z "$BRC_REGION" ]; then
   echo "ERROR: Must define BRC_REGION in environment or argument"
   USAGEFLAG=1
 fi
+if [ -z "$IMAGEID" ]; then
+  echo "ERROR: Must define IMAGEID as argument"
+  USAGEFLAG=1
+fi
 
 if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
@@ -59,7 +66,7 @@ BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
 IMAGE_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             $IMAGE_ENDPOINT/images \
+             $IMAGE_ENDPOINT/images/$IMAGEID \
              -X GET \
              -H "Accept: application/json" \
              -H "Content-Type: application/json" \
