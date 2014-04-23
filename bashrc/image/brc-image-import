@@ -12,12 +12,13 @@ function usage() {
   echo "  # brc-image-import -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "                     -t 123456 \\"
   echo "                     -r dfw \\"
-  echo "                     -f /home/test/centos.vhd"
+  echo "                     -n gold-web-image \\"
+  echo "                     -f server-images/webX.vhd"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -f X  Cloud Files container and file of the VHD file to import."
   echo "  -h	Print this help"
-  echo "  -f X  Local path to VHD file of image to import."
   echo "  -n X  Image name.  If excluded, will just use the filename from"
   echo "        IMAGEFILE argument."
   echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
@@ -59,9 +60,6 @@ fi
 if [ -z "$IMAGEFILE" ]; then
   echo "ERROR: Must define IMAGEFILE as argument"
   USAGEFLAG=1
-elif [ ! -f "$IMAGEFILE" ]; then
-  echo "ERROR: Specified IMAGEFILE does not exist"
-  USAGEFLAG=1
 fi
 
 if [ $USAGEFLAG -ne 0 ]; then
@@ -70,6 +68,7 @@ fi
 
 if [ -z "$IMAGENAME" ]; then
   IMAGENAME=$( basename $IMAGEFILE )
+  IMAGENAME=${$IMAGEFILE/.vhd/}
 fi
 
 BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
