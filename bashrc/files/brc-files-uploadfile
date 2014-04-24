@@ -7,6 +7,7 @@
 
 function usage() {
   echo "Usage: brc-files-uploadfile [-h] [-a BRC_AUTHTOKEN] [-r BRC_REGION] \\"
+  echo "                            [-t BRC_TENANTID] -f LOCALFILE -c CONTAINER"
   echo "Example:"
   echo "  # brc-files-uploadfile -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "                         -r dfw"
@@ -46,8 +47,6 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
-BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
-FILES_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 
 
 #
@@ -57,8 +56,13 @@ FILES_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
 #
 
 
+
+BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
+FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
+FILES_VAULT=$( brc-files-getvaultname )
+
 DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             $FILES_ENDPOINT \
+             $FILES_ENDPOINT/$FILES_VAULT \
              -X PUT \
              -H "Accept: application/json" \
              -H "Content-Type: application/json" \
