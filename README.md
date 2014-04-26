@@ -21,3 +21,7 @@ Installation:
 
   Questions?
   andrew@rootmypc.net
+
+All content protected under
+GNU General Public License (GPL) version 3
+https://www.gnu.org/licenses/quick-guide-gplv3.html
