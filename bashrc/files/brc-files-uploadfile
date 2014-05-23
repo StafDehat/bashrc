@@ -63,10 +63,17 @@ if [ -z "$CONTAINER" ]; then
   echo "ERROR: Must define CONTAINER as argument"
   USAGEFLAG=1
 fi
+if [ -z "$BRC_VAULTNAME" ]; then
+  echo "ERROR: Must define BRC_VAULTNAME in environment or argument"
+  USAGEFLAG=1
+fi
 
 if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
+
+#FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
+CDN_ENDPOINT=$( $BRCUTIL/brc-util-cdnendpoint -r $BRC_REGION )
 
 if [ -z "$NEWFILENAME" ]; then
   NEWFILENAME=$( basename $LOCALFILE )
@@ -94,18 +101,24 @@ function uploadSmallFile() {
   fi
 }
 
-#
-# Test the source file.
-# If > 4G then split & upload each piece individually, then create a dynamic manifest
-# http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
-#
-MAXSIZE=$(( 4 * 1024 * 1024 * 1024 ))
-if [ $( stat -c%s $LOCALFILE ) -lt $MAXSIZE ]; then
-  # Just upload it.  Function this.
-  uploadSmallFile $LOCALFILE $NEWFILENAME
-else
-  # split -d -b 1024 $LOCALFILE ${LOCALFILE}-
-  # for FILE in ${LOCALFILE}-*; do
+
+function uploadLargeFile() {
+  local FILE=$1
+  local CFNAME=$2
+  local COUNT=0
+  # bs=4096 -- Attempt to optimize read speeds by matching block size on drive architecture
+  # count=262144 == 1G/4096 -- Read 1G
+  # skip=262144 * $COUNT -- Skip previously-read 1G chunks
+  while true; do
+#    dd if=$FILE bs=4k count=262144 seek=$(( 4096 * 262144 )) \
+#      | tee 
+#    tee?
+    
+    local MD5=$( dd if=$FILE bs=4k count=262144 seek=$(( 4096 * 262144 * $COUNT )) \
+                 | md5sum | awk '{print $1}' )
+    
+  done
+#http://unix.stackexchange.com/questions/8444/is-it-possible-in-bash-to-start-reading-a-file-from-an-arbitary-byte-count-offs
   #   uploadSmallFile $FILE $NEWFILENAME-${LOCALFILE//}
   # done
   # Create/Upload an empty dynamic manifest file
@@ -124,6 +137,20 @@ else
   elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
     errornot200 $CODE $( echo "$DATA" | head -n -1 )
   fi
+}
+
+
+#
+# Test the source file.
+# If > 4G then split & upload each piece individually, then create a dynamic manifest
+# http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
+#
+MAXSIZE=$(( 4 * 1024 * 1024 * 1024 ))
+if [ $( stat -c%s $LOCALFILE ) -lt $MAXSIZE ]; then
+  # Just upload it.  Function this.
+  uploadSmallFile $LOCALFILE $NEWFILENAME
+else
+  uploadLargeFile $LOCALFILE $NEWFILENAME
 fi
 
 
