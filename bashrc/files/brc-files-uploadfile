@@ -7,24 +7,34 @@
 
 function usage() {
   echo "Usage: brc-files-uploadfile [-h] [-a BRC_AUTHTOKEN] [-r BRC_REGION] \\"
-  echo "                            [-t BRC_TENANTID] -f LOCALFILE -c CONTAINER"
+  echo "                            [-t BRC_TENANTID] [-n NEWFILENAME] \\"
+  echo "                            -f LOCALFILE -c CONTAINER"
   echo "Example:"
   echo "  # brc-files-uploadfile -a 1a2b3c4d5e6f7g8h9i0j \\"
-  echo "                         -r dfw"
+  echo "                         -r dfw \\"
+  echo "                         -f /home/user/pbjt.jpg \\"
+  echo "                         -c jpegs"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -c X  Name of Cloud Files container in which to store file."
+  echo "  -f X  Path to local file to be uploaded."
   echo "  -h	Print this help"
+  echo "  -n X  Optional.  Filename to use in Cloud Files.  If excluded,"
+  echo "        name in Cloud Files will match local filename."
   echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
   echo "        the environment variable BRC_REGION instead of as an"
   echo "        argument."
 }
 
 USAGEFLAG=0
-while getopts ":ha:r:" arg; do
+while getopts ":ha:r:f:c:n:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     r) BRC_REGION=$OPTARG;;
+    f) LOCALFILE=$OPTARG;;
+    c) CONTAINER=$OPTARG;;
+    n) NEWFILENAME=$OPTARG;;
     h) usage && exit 0;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -42,41 +52,85 @@ if [ -z "$BRC_REGION" ]; then
   echo "ERROR: Must define BRC_REGION in environment or argument"
   USAGEFLAG=1
 fi
+if [ -z "$LOCALFILE" ]; then
+  echo "ERROR: Must define LOCALFILE as argument"
+  USAGEFLAG=1
+elif [ ! -f "$LOCALFILE" ]; then
+  echo "ERROR: Can not access $LOCALFILE - does it exist?"
+  USAGEFLAG=1
+fi
+if [ -z "$CONTAINER" ]; then
+  echo "ERROR: Must define CONTAINER as argument"
+  USAGEFLAG=1
+fi
 
 if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
+if [ -z "$NEWFILENAME" ]; then
+  NEWFILENAME=$( basename $LOCALFILE )
+fi
 
+
+function uploadSmallFile() {
+  local FILE=$1
+  local CFNAME=$2
+  local MD5=$( md5sum $FILE | awk '{print $1}' )
+  DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+               $FILES_ENDPOINT/$FILES_VAULT/$CONTAINER/$CFNAME \
+               -T "$LOCALFILE" \
+               -X PUT \
+               -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+               -H "ETag: $MD5" \
+            2>/dev/null )
+  RETVAL=$?
+  CODE=$( echo "$DATA" | tail -n 1 )
+  # Check for failed API call
+  if [ $RETVAL -ne 0 ]; then
+    errorcurlfail
+  elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+    errornot200 $CODE $( echo "$DATA" | head -n -1 )
+  fi
+}
 
 #
 # Test the source file.
 # If > 4G then split & upload each piece individually, then create a dynamic manifest
 # http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
 #
-
+MAXSIZE=$(( 4 * 1024 * 1024 * 1024 ))
+if [ $( stat -c%s $LOCALFILE ) -lt $MAXSIZE ]; then
+  # Just upload it.  Function this.
+  uploadSmallFile $LOCALFILE $NEWFILENAME
+else
+  # split -d -b 1024 $LOCALFILE ${LOCALFILE}-
+  # for FILE in ${LOCALFILE}-*; do
+  #   uploadSmallFile $FILE $NEWFILENAME-${LOCALFILE//}
+  # done
+  # Create/Upload an empty dynamic manifest file
+  DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+               $FILES_ENDPOINT/$FILES_VAULT/$CONTAINER/$NEWFILENAME \
+               -T /dev/null \
+               -X PUT \
+               -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+               -H "X-Object-Manifest: $CONTAINER/${NEWFILENAME}-" \
+            2>/dev/null )
+  RETVAL=$?
+  CODE=$( echo "$DATA" | tail -n 1 )
+  # Check for failed API call
+  if [ $RETVAL -ne 0 ]; then
+    errorcurlfail
+  elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+    errornot200 $CODE $( echo "$DATA" | head -n -1 )
+  fi
+fi
 
 
 BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
 FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
 FILES_VAULT=$( brc-files-getvaultname )
 
-DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-             $FILES_ENDPOINT/$FILES_VAULT \
-             -X PUT \
-             -H "Accept: application/json" \
-             -H "Content-Type: application/json" \
-             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-          2>/dev/null )
-RETVAL=$?
-CODE=$( echo "$DATA" | tail -n 1 )
-
-# Check for failed API call
-if [ $RETVAL -ne 0 ]; then
-  errorcurlfail
-elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
-  errornot200 $CODE $( echo "$DATA" | head -n -1 )
-fi
 
 DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
 
