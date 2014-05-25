@@ -71,9 +71,13 @@ TENANTID=$( echo "$DATA" \
               | sed -n 's/^bashrc~access~token~tenant~id~//p' )
 EXPIRES=$( echo "$DATA" \
               | sed -n 's/^bashrc~access~token~expires~//p' )
+VAULTNAME=$( echo "$DATA" \
+              | sed -n 's/^bashrc~access~user~roles~.*\?~tenantId~MossoCloudFS/MossoCloudFS/p' )
+
 
 echo "BRC_AUTHTOKEN=$AUTHTOKEN"
 echo "BRC_TENANTID=$TENANTID"
 echo "EXPIRES=$EXPIRES"
+echo "BRC_VAULTNAME=$VAULTNAME"
 
 exit 0
