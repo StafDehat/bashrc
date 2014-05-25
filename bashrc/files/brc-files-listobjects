@@ -3,23 +3,18 @@
 . $BASHRC_BASE/bashrc/errors.bash
 
 function usage() {
-  echo "Usage: brc-files-purgeobject [-h] [-a BRC_AUTHTOKEN] [-v BRC_VAULTNAME] \\"
-  echo "                             [-r BRC_REGION] [-e EMAIL] \\"
-  echo "                             -c CONTAINER -o OBJECT"
+  echo "Usage: brc-files-listobjects [-h] [-a BRC_AUTHTOKEN] [-v BRC_VAULTNAME] \\"
+  echo "                             [-r BRC_REGION] -c CONTAINER"
   echo "Example:"
-  echo "  # brc-files-purgeobject -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "  # brc-files-listobjects -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "                          -v MossoCloudFS_199f2dd2-e293-11e3-87ea-6f46a026e216 \\"
   echo "                          -r dfw \\"
-  echo "                          -c images \\"
-  echo "                          -o banner.jpg \\"
-  echo "                          -e first.last@domain.com"
+  echo "                          -c images"
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
-  echo "  -c X  Name of Cloud Files container in which the object resides."
-  echo "  -e X  Contact email to which notification will be sent upon completion."
+  echo "  -c X  Name of Cloud Files container to enumerate."
   echo "  -h	Print this help"
-  echo "  -o X  Name of Cloud Files object to purge from CDN cache."
   echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
   echo "        the environment variable BRC_REGION instead of as an"
   echo "        argument."
@@ -28,13 +23,12 @@ function usage() {
 }
 
 USAGEFLAG=0
-while getopts ":a:c:e:ho:v:" arg; do
+while getopts ":a:c:hr:v:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     c) CONTAINER=$OPTARG;;
-    e) EMAIL=$OPTARG;;
     h) usage && exit 0;;
-    o) OBJECT=$OPTARG;;
+    r) BRC_REGION=$OPTARG;;
     v) BRC_VAULTNAME=$OPTARG;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -50,7 +44,7 @@ for ARG in BRC_AUTHTOKEN BRC_REGION BRC_VAULTNAME; do
     USAGEFLAG=1
   fi
 done
-for ARG in CONTAINER OBJECT; do
+for ARG in CONTAINER; do
   if [ -z "${!ARG}" ]; then
     echo "ERROR: Must define ${!ARG} as argument"
     USAGEFLAG=1
@@ -60,24 +54,15 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
-#FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
-CDN_ENDPOINT=$( $BRCUTIL/brc-util-cdnendpoint -r $BRC_REGION )
-
-echo curl --write-out \\n%{http_code} --silent --output - \
-            $CDN_ENDPOINT/$BRC_VAULTNAME/$CONTAINER/$OBJECT \
-            -X DELETE \
-            -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-            -H "X-Purge-Email: $EMAIL" 
-exit 0
-
+FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
+#CDN_ENDPOINT=$( $BRCUTIL/brc-util-cdnendpoint -r $BRC_REGION )
 
 #
-# Purge the object
+# Make the call
 DATA=$(curl --write-out \\n%{http_code} --silent --output - \
-            $CDN_ENDPOINT/$BRC_VAULTNAME/$CONTAINER/$OBJECT \
-            -X DELETE \
+            $FILES_ENDPOINT/$BRC_VAULTNAME/$CONTAINER?format=json \
+            -X GET \
             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-            -H "X-Purge-Email: $EMAIL" \
          2>/dev/null )
 RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
@@ -90,11 +75,6 @@ elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
 fi
 
 DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
-
-echo "Code: $CODE"
-echo "Data:"
 echo "$DATA"
-
-
 
 exit 0
