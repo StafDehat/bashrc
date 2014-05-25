@@ -81,32 +81,25 @@ fi
 function uploadSmallFile() {
   local FILE="$1"
   local CFNAME="$2"
-  local MD5="$3"
-  echo "Creating object $CFNAME"
-  # Retry loop - try 10 times
-  for x in `seq 1 10`; do
-    DATA=$( curl --write-out \\n%{http_code} --silent --output - \
-                 $FILES_ENDPOINT/$BRC_VAULTNAME/"$CONTAINER"/"$CFNAME" \
-                 -X PUT \
-                 -T "$FILE" \
-                 -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-                 -H "ETag: $MD5" \
-              2>/dev/null )
-    RETVAL=$?
-    CODE=$( echo "$DATA" | tail -n 1 )
-    # Check for failed API call
-    if [ $RETVAL -ne 0 ]; then
-      errorcurlfail
-    elif [[ $(echo "$CODE" | grep -cE '^2..$') -gt 0 ]]; then
-      return 0
-    elif [ $CODE -eq 422 ]; then
-      # md5sum error - retry
-      continue
-    else #Not 200, not 422
-      errornot200 $CODE $( echo "$DATA" | head -n -1 )
-    fi
-  done
-  return 1
+  DATA=$( curl -I --write-out \\n%{http_code} --silent --output - \
+               $FILES_ENDPOINT/$BRC_VAULTNAME/"$CONTAINER"/"$CFNAME" \
+               -X PUT \
+               -T "$FILE" \
+               -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+            2>/dev/null )
+  RETVAL=$?
+  CODE=$( echo "$DATA" | tail -n 1 )
+  # Check for failed API call
+  if [ $RETVAL -ne 0 ]; then
+    errorcurlfail
+  elif ! grep -qE '^2..$' <<<$CODE; then
+    errornot200 $CODE $( echo "$DATA" | head -n -1 )
+  fi
+  # Print the md5sum etag
+  # We'll test the value outside this function
+  # Trying to test inside this function puts us in named-pipe hell, introduces deadlock,
+  #   and/or forces us to run the 'dd' twice.
+  echo "$DATA" | sed -n 's/^\s*Etag:\s*//p'
 }
 
 
@@ -114,32 +107,37 @@ function uploadLargeFile() {
   local FILE="$1"
   local CFNAME="$2"
   local SIZE=$( du -B 1G "$FILE" | awk '{print $1}' )
-  local TMPFILE="/tmp/bashrc.$(( $RANDOM * $RANDOM ))"
-  echo "Object '$CFNAME' >4G.  Splitting into 1G segments."
-  #mkfifo $TMPFILE
+  local PIPE1="/tmp/bashrc.pipe1"
+  local PIPE2="/tmp/bashrc.pipe2"
+
   # Upload all the file segments, 1G at a time
+  mkfifo $PIPE1 $PIPE2
   for COUNT in $( seq -w 0 $(( $SIZE - 1 )) ); do
     # Retry loop - try 10 times
     for x in `seq 1 10`; do
+      echo "Creating object '${CFNAME}-$COUNT'."
       # bs=4096 -- Attempt to optimize read speeds by matching block size on drive architecture
       # count=262144 == 1G/4096 -- Read 1G
       # skip=262144 * $COUNT -- Skip previously-read 1G chunks
-      local MD5=$( dd if="$FILE" bs=4k count=262144 seek=$(( 262144 * $COUNT )) 2>/dev/null \
-                     | md5sum | awk '{print $1}' )
-      #uploadSmallFile $TMPFILE \
-      uploadSmallFile <( dd if="$FILE" bs=4k count=262144 seek=$(( 262144 * $COUNT )) 2>/dev/null ) \
-                      "${CFNAME}"-$COUNT \
-                      $MD5
+      dd if="$FILE" bs=4k count=262144 seek=$(( 262144 * $COUNT )) 2>/dev/null \
+        | tee $PIPE1 \
+        | md5sum | awk '{print $1}' > $PIPE2 &
+      local ETAG=$( uploadSmallFile $PIPE1 \
+                                    "${CFNAME}"-$COUNT )
+      MD5=$( cat $PIPE2 )
       # If segment uploaded successfully, break the x(1-10) retry loop
       # Stay in the COUNT loop.  ie: Do the next segment.
-      if [ $? -eq 0 ]; then
+      if grep -q "$MD5" <<<$ETAG; then
         break
       fi
+      # MD5 error - loop to retry
+      continue
     done #End for x(1-10)
   done #End for COUNT
-  #rm -f $TMPFILE
+  rm -f $PIPE1 $PIPE2
 
-  # Create/Upload an empty dynamic manifest file
+  # Create a dynamic manifest file
+  echo "Creating manifest object '$CFNAME'."
   DATA=$( curl --write-out \\n%{http_code} --silent --output - \
                $FILES_ENDPOINT/$BRC_VAULTNAME/"$CONTAINER"/"$CFNAME" \
                -T /dev/null \
@@ -152,7 +150,7 @@ function uploadLargeFile() {
   # Check for failed API call
   if [ $RETVAL -ne 0 ]; then
     errorcurlfail
-  elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  elif ! grep -qE '^2..$' <<<$CODE; then
     errornot200 $CODE $( echo "$DATA" | head -n -1 )
   fi
 }
@@ -164,12 +162,23 @@ function uploadLargeFile() {
 # http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
 MAXSIZE=$(( 5 * 1024 * 1024 * 1024 ))
 if [ $( du -B 1G "$LOCALFILE" | awk '{print $1}' ) -lt $MAXSIZE ]; then
-  MD5=$( md5sum "$LOCALFILE" | awk '{print $1}' )
-  uploadSmallFile "$LOCALFILE" "$OBJECTNAME" "$MD5"
+  # Retry loop - try <=10 times
+  for x in `seq 1 10`; do
+    echo "Creating object '$OBJECTNAME'."
+    MD5=$( md5sum "$LOCALFILE" | awk '{print $1}' )
+    ETAG=$( uploadSmallFile $LOCALFILE "$OBJECTNAME" )
+    # If segment uploaded successfully, break the x(1-10) retry loop
+    # Stay in the COUNT loop.  ie: Do the next segment.
+    if grep -q "$MD5" <<<$ETAG; then
+      break
+    fi
+    # MD5 error - loop to retry
+    continue
+  done
 else
+  echo "Object '$OBJECTNAME' >4G.  Splitting into 1G segments."
   uploadLargeFile "$LOCALFILE" "$OBJECTNAME"
 fi
 
-echo "Response code: $CODE"
 exit 0
 
