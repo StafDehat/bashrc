@@ -52,13 +52,13 @@ shift $(($OPTIND - 1))
 
 for ARG in BRC_AUTHTOKEN BRC_REGION BRC_VAULTNAME; do
   if [ -z "${!ARG}" ]; then
-    echo "ERROR: Must define ${!ARG} in environment or argument"
+    echo "ERROR: Must define $ARG in environment or argument"
     USAGEFLAG=1
   fi
 done
 for ARG in CONTAINER LOCALFILE; do
   if [ -z "${!ARG}" ]; then
-    echo "ERROR: Must define ${!ARG} as argument"
+    echo "ERROR: Must define $ARG as argument"
     USAGEFLAG=1
   fi
 done
@@ -81,10 +81,15 @@ fi
 function uploadSmallFile() {
   local FILE="$1"
   local CFNAME="$2"
-  DATA=$( curl -I --write-out \\n%{http_code} --silent --output - \
+  # BUG: http://curl.haxx.se/changes.html
+  #      "Fixed in 7.37.0 - May 21 2014"
+  #      "sockfilt.c: properly handle disk files, pipes and character input"
+  #      Because of this, I can't pass the file directly to curl - gotta
+  #      cat it and pipe to curl, then use "-T -" to read from stdin with curl.
+  DATA=$( cat "$FILE" | curl -I --write-out \\n%{http_code} --silent --output - \
                $FILES_ENDPOINT/$BRC_VAULTNAME/"$CONTAINER"/"$CFNAME" \
                -X PUT \
-               -T "$FILE" \
+               -T - \
                -H "X-Auth-Token: $BRC_AUTHTOKEN" \
             2>/dev/null )
   RETVAL=$?
@@ -106,20 +111,25 @@ function uploadSmallFile() {
 function uploadLargeFile() {
   local FILE="$1"
   local CFNAME="$2"
-  local SIZE=$( du -B 1G "$FILE" | awk '{print $1}' )
+  local SIZE=$( stat -c %s "$FILE" )
+  local SEGMENTS=$(( $SIZE / (1024*1024*1024) ))
+  if [ $(( $SIZE % (1024*1024*1024) )) -eq 0 ]; then
+    SEGMENTS=$(( $SEGMENTS - 1 ))
+  fi
   local PIPE1="/tmp/bashrc.pipe1"
   local PIPE2="/tmp/bashrc.pipe2"
 
   # Upload all the file segments, 1G at a time
   mkfifo $PIPE1 $PIPE2
-  for COUNT in $( seq -w 0 $(( $SIZE - 1 )) ); do
+  seq -w 0 $SEGMENTS
+  for COUNT in $( seq -w 0 $SEGMENTS ); do
     # Retry loop - try 10 times
     for x in `seq 1 10`; do
       echo "Creating object '${CFNAME}-$COUNT'."
       # bs=4096 -- Attempt to optimize read speeds by matching block size on drive architecture
       # count=262144 == 1G/4096 -- Read 1G
       # skip=262144 * $COUNT -- Skip previously-read 1G chunks
-      dd if="$FILE" bs=4k count=262144 seek=$(( 262144 * $COUNT )) 2>/dev/null \
+      dd if="$FILE" bs=4k count=262144 skip=$(( 262144 * $COUNT )) 2>/dev/null \
         | tee $PIPE1 \
         | md5sum | awk '{print $1}' > $PIPE2 &
       local ETAG=$( uploadSmallFile $PIPE1 \
@@ -161,22 +171,22 @@ function uploadLargeFile() {
 # If > 4G then split & upload each piece individually, then create a dynamic manifest
 # http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
 MAXSIZE=$(( 5 * 1024 * 1024 * 1024 ))
-if [ $( du -B 1G "$LOCALFILE" | awk '{print $1}' ) -lt $MAXSIZE ]; then
+if [ $( stat -c %s "$LOCALFILE" ) -le $MAXSIZE ]; then
   # Retry loop - try <=10 times
   for x in `seq 1 10`; do
     echo "Creating object '$OBJECTNAME'."
     MD5=$( md5sum "$LOCALFILE" | awk '{print $1}' )
     ETAG=$( uploadSmallFile $LOCALFILE "$OBJECTNAME" )
     # If segment uploaded successfully, break the x(1-10) retry loop
-    # Stay in the COUNT loop.  ie: Do the next segment.
     if grep -q "$MD5" <<<$ETAG; then
       break
     fi
     # MD5 error - loop to retry
+    echo "Checksum error - retrying"
     continue
   done
 else
-  echo "Object '$OBJECTNAME' >4G.  Splitting into 1G segments."
+  echo "Object '$OBJECTNAME' >5G.  Splitting into 1G segments."
   uploadLargeFile "$LOCALFILE" "$OBJECTNAME"
 fi
 

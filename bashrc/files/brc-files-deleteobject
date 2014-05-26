@@ -43,13 +43,13 @@ shift $(($OPTIND - 1))
 
 for ARG in BRC_AUTHTOKEN BRC_REGION BRC_VAULTNAME; do
   if [ -z "${!ARG}" ]; then
-    echo "ERROR: Must define ${!ARG} in environment or argument"
+    echo "ERROR: Must define $ARG in environment or argument"
     USAGEFLAG=1
   fi
 done
 for ARG in CONTAINER OBJECT; do
   if [ -z "${!ARG}" ]; then
-    echo "ERROR: Must define ${!ARG} as argument"
+    echo "ERROR: Must define $ARG as argument"
     USAGEFLAG=1
   fi
 done
