@@ -140,7 +140,6 @@ function uploadLargeFile() {
 
   # Upload all the file segments, 1G at a time
   mkfifo $PIPE1 $PIPE2
-  seq -w 0 $SEGMENTS
   for COUNT in $( seq -w 0 $SEGMENTS ); do
     # Retry loop - try 10 times
     for x in `seq 1 10`; do
