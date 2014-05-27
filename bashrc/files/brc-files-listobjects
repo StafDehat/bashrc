@@ -4,7 +4,7 @@
 
 function usage() {
   echo "Usage: brc-files-listobjects [-h] [-a BRC_AUTHTOKEN] [-v BRC_VAULTNAME] \\"
-  echo "                             [-r BRC_REGION] -c CONTAINER"
+  echo "                             [-r BRC_REGION] -c CONTAINER [-s]"
   echo "Example:"
   echo "  # brc-files-listobjects -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "                          -v MossoCloudFS_199f2dd2-e293-11e3-87ea-6f46a026e216 \\"
@@ -18,10 +18,13 @@ function usage() {
   echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
   echo "        the environment variable BRC_REGION instead of as an"
   echo "        argument."
+  echo "  -s    Use ServiceNet.  For this to work, you must be executing this"
+  echo "        command within the same region as BRC_REGION."
   echo "  -v X  Vault name for this account.  This can be set via the environment"
   echo "        variable BRC_VAULTNAME instead of as an argument."
 }
 
+SNET=0
 USAGEFLAG=0
 while getopts ":a:c:hr:v:" arg; do
   case $arg in
@@ -29,6 +32,7 @@ while getopts ":a:c:hr:v:" arg; do
     c) CONTAINER=$OPTARG;;
     h) usage && exit 0;;
     r) BRC_REGION=$OPTARG;;
+    s) SNET=1;;
     v) BRC_VAULTNAME=$OPTARG;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -54,8 +58,18 @@ if [ $USAGEFLAG -ne 0 ]; then
   usage && exit 1
 fi
 
-FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
-#CDN_ENDPOINT=$( $BRCUTIL/brc-util-cdnendpoint -r $BRC_REGION )
+
+if [ "$SNET" -eq 1 ]; then
+  FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION -i )
+else
+  FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
+fi
+FILESHOST=$( echo "$FILES_ENDPOINT" | cut -d/ -f3 )
+nc -w 5 -z $FILESHOST 443 &>/dev/null
+if [ $? -ne 0 ]; then
+  echo "Error: Unable to reach Cloud Files API ($FILESHOST:443)."
+  exit 1
+fi
 
 #
 # Make the call
