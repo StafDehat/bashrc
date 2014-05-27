@@ -15,13 +15,11 @@ trap 'cleanup' 1 2 9 15 17 19 23 EXIT
 
 
 function usage() {
-  echo "Usage: brc-files-createobject [-h] [-a BRC_AUTHTOKEN] [-r BRC_REGION] \\"
-  echo "                              [-t BRC_TENANTID] [-v BRC_VAULTNAME] \\"
-  echo "                              -f LOCALFILE -c CONTAINER \\"
-  echo "                              [-n OBJECTNAME] [-s]"
+  echo "Usage: brc-files-createobject [-h] [-a BRC_AUTHTOKEN] [-v BRC_VAULTNAME] \\"
+  echo "                              [-s] [-r BRC_REGION] [-n OBJECTNAME] \\"
+  echo "                              -f LOCALFILE -c CONTAINER"
   echo "Example:"
   echo "  # brc-files-createobject -a 1a2b3c4d5e6f7g8h9i0j \\"
-  echo "                           -t 123456 \\"
   echo "                           -v MossoCloudFS_199f2dd2-e293-11e3-87ea-6f46a026e216 \\"
   echo "                           -r dfw \\"
   echo "                           -f /home/user/pbjt.jpg \\"
