@@ -5,11 +5,20 @@
 
 . $BASHRC_BASE/bashrc/errors.bash
 
+PIPE1="/tmp/bashrc.pipe1"
+PIPE2="/tmp/bashrc.pipe2"
+function cleanup {
+ rm -f $PIPE1 $PIPE2
+ exit
+}
+trap 'cleanup' 1 2 9 15 17 19 23 EXIT
+
+
 function usage() {
   echo "Usage: brc-files-createobject [-h] [-a BRC_AUTHTOKEN] [-r BRC_REGION] \\"
   echo "                              [-t BRC_TENANTID] [-v BRC_VAULTNAME] \\"
   echo "                              -f LOCALFILE -c CONTAINER \\"
-  echo "                              [-n OBJECTNAME]"
+  echo "                              [-n OBJECTNAME] [-s]"
   echo "Example:"
   echo "  # brc-files-createobject -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "                           -t 123456 \\"
@@ -28,12 +37,15 @@ function usage() {
   echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
   echo "        the environment variable BRC_REGION instead of as an"
   echo "        argument."
+  echo "  -s    Use ServiceNet.  For this to work, you must be executing this"
+  echo "        command within the same region as BRC_REGION."
   echo "  -v X  Vault name for this account.  This can be set via the environment"
   echo "        variable BRC_VAULTNAME instead of as an argument."
 }
 
+SNET=0
 USAGEFLAG=0
-while getopts ":a:c:f:hn:r:v:" arg; do
+while getopts ":a:c:f:hn:r:sv:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     c) CONTAINER="$OPTARG";;
@@ -41,6 +53,7 @@ while getopts ":a:c:f:hn:r:v:" arg; do
     h) usage && exit 0;;
     n) OBJECTNAME="$OPTARG";;
     r) BRC_REGION=$OPTARG;;
+    s) SNET=1;;
     v) BRC_VAULTNAME=$OPTARG;;
     :) echo "ERROR: Option -$OPTARG requires an argument."
        USAGEFLAG=1;;
@@ -70,7 +83,12 @@ if [ ! -f "$LOCALFILE" ]; then
   exit 1
 fi
 
-FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
+
+if [ "$SNET" -eq 1 ]; then
+  FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION -i )
+else
+  FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION -i )
+fi
 #CDN_ENDPOINT=$( $BRCUTIL/brc-util-cdnendpoint -r $BRC_REGION )
 
 if [ -z "$OBJECTNAME" ]; then
@@ -116,8 +134,6 @@ function uploadLargeFile() {
   if [ $(( $SIZE % (1024*1024*1024) )) -eq 0 ]; then
     SEGMENTS=$(( $SEGMENTS - 1 ))
   fi
-  local PIPE1="/tmp/bashrc.pipe1"
-  local PIPE2="/tmp/bashrc.pipe2"
 
   # Upload all the file segments, 1G at a time
   mkfifo $PIPE1 $PIPE2
@@ -168,7 +184,7 @@ function uploadLargeFile() {
 
 #
 # Test the source file.
-# If > 4G then split & upload each piece individually, then create a dynamic manifest
+# If > 5G then upload in 1G segments, then create a dynamic manifest
 # http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
 MAXSIZE=$(( 5 * 1024 * 1024 * 1024 ))
 if [ $( stat -c %s "$LOCALFILE" ) -le $MAXSIZE ]; then
