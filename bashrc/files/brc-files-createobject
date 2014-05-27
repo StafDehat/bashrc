@@ -85,9 +85,14 @@ fi
 if [ "$SNET" -eq 1 ]; then
   FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION -i )
 else
-  FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION -i )
+  FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
 fi
-#CDN_ENDPOINT=$( $BRCUTIL/brc-util-cdnendpoint -r $BRC_REGION )
+FILESHOST=$( echo "$FILES_ENDPOINT" | cut -d/ -f3 )
+nc -w 5 -z $FILESHOST 443 &>/dev/null
+if [ $? -ne 0 ]; then
+  echo "Error: Unable to reach Cloud Files API ($FILESHOST:443)."
+  exit 1
+fi
 
 if [ -z "$OBJECTNAME" ]; then
   OBJECTNAME=$( basename "$LOCALFILE" )
