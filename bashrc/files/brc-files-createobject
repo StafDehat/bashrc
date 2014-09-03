@@ -147,7 +147,7 @@ function uploadLargeFile() {
       # bs=4096 -- Attempt to optimize read speeds by matching block size on drive architecture
       # count=262144 == 1G/4096 -- Read 1G
       # skip=262144 * $COUNT -- Skip previously-read 1G chunks
-      dd if="$FILE" bs=4k count=262144 skip=$(( 262144 * $( echo $COUNT | sed 's/^0*//' ) )) 2>/dev/null \
+      dd if="$FILE" bs=4k count=262144 skip=$(( 262144 * $((10#$COUNT)) )) 2>/dev/null \
         | tee $PIPE1 \
         | md5sum | awk '{print $1}' > $PIPE2 &
       local ETAG=$( uploadSmallFile $PIPE1 \
