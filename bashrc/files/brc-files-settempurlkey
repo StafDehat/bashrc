@@ -1,0 +1,15 @@
+#!/bin/bash
+
+
+# If you use a ServiceNet endpoint here, all TempURLs generated with the
+#   key will only be accessible via ServiceNet
+
+DATA=$( curl -I --write-out \\n%{http_code} --silent --output - \
+             $FILES_ENDPOINT/$BRC_VAULTNAME \
+             -X POST \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+             -H "X-Account-Meta-Temp-Url-Key: $TEMPKEY" \
+          2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
