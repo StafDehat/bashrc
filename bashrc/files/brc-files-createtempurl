@@ -1,0 +1,110 @@
+#!/bin/bash
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-files-createtempurl [-h] [-v BRC_VAULTNAME] \\"
+  echo "                               [-r BRC_REGION] -c CONTAINER -o OBJECT \\"
+  echo "                               -e EXPIRE_TIME -k PRESET_KEY"
+  echo "Usage: brc-files-createtempurl [-h] -u PERMANENT_URL \\"
+  echo "                               -e EXPIRE_TIME -k PRESET_KEY"
+  echo "Examples:"
+  echo "  # brc-files-createtempurl -v MossoCloudFS_199f2dd2-e293-11e3-87ea-6f46a026e216 \\"
+  echo "                            -r dfw \\"
+  echo "                            -c images \\"
+  echo "                            -o cat.jpg \\"
+  echo "                            -e '2 days' \\"
+  echo "                            -k P@ssw0rd"
+  echo "  # brc-files-createtempurl -u https:// \\"
+  echo "                            -e '2014-09-05 12:00:00' \\"
+  echo "                            -k P@ssw0rd"
+  echo "Arguments:"
+  echo "  -c X  Name of Cloud Files container in which the object resides."
+  echo "  -e X  Expiration time.  This can be either a date or a duration."
+  echo "  -h	Print this help"
+  echo "  -k X  Pre-set TempURL key (set with brc-files-settempurlkey)"
+  echo "  -o    Name of target object."
+  echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
+  echo "        the environment variable BRC_REGION instead of as an"
+  echo "        argument."
+  echo "  -u X  Permanent URL.  Overrides BRC_VAULTNAME, BRC_REGION, CONTAINER,"
+  echo "        and OBJECT."
+  echo "  -v X  Vault name for this account.  This can be set via the environment"
+  echo "        variable BRC_VAULTNAME instead of as an argument."
+}
+
+function hash_hmac {
+  digest="$1"
+  data="$2"
+  key="$3"
+  shift 3
+  echo -n "$data" | openssl dgst "-$digest" -hmac "$key" "$@"
+}
+
+USAGEFLAG=0
+while getopts ":c:e:hk:o:r:u:v:" arg; do
+  case $arg in
+    c) CONTAINER=$OPTARG;;
+    e) EXPIRES="$OPTARG";;
+    h) usage && exit 0;;
+    k) TEMPKEY="$OPTARG";;
+    o) OBJECT=$OPTARG;;
+    r) BRC_REGION=$OPTARG;;
+    u) URL="$OPTARG";;
+    v) BRC_VAULTNAME=$OPTARG;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+# Gotta pass either URL or Region,Vault,Container,Object
+if [ -z "$URL" ]; then
+  for ARG in BRC_REGION BRC_VAULTNAME; do
+    if [ -z "${!ARG}" ]; then
+      echo "ERROR: Must define $ARG in environment or argument"
+      USAGEFLAG=1
+    fi
+  done
+  for ARG in CONTAINER OBJECT; do
+    if [ -z "${!ARG}" ]; then
+      echo "ERROR: Must define $ARG as argument"
+      USAGEFLAG=1
+    fi
+  done
+fi
+# Always need Expiration Time and Temp Key
+for ARG in EXPIRES TEMPKEY; do
+  if [ -z "${!ARG}" ]; then
+    echo "ERROR: Must define $ARG as argument"
+    USAGEFLAG=1
+  fi
+done
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+
+# Mangle URL
+if [ -z "$URL" ]; then
+  FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
+  URL="$FILES_ENDPOINT/$BRC_VAULTNAME/$CONTAINER/$OBJECT"
+  OBJPATH="/v1/$BRC_VAULTNAME/$CONTAINER/$OBJECT"
+else
+  # Strip "snet-", otherwise the tempURL would be SNet-only
+  URL="${URL/:\/\/snet-/://}"
+  OBJPATH="${URL/#*\/v1\///v1/}"
+fi
+
+EXPIRES=$( date +%s -d "$EXPIRES" )
+HMACBODY="GET\n$EXPIRES\n$OBJPATH"
+SIGNATURE=$( hash_hmac sha1 "$HMACBODY" "$TEMPKEY" )
+
+echo "$URL?temp_url_sig=$SIGNATURE&temp_url_expires=$EXPIRES"
+#            "$FILES_ENDPOINT/$BRC_VAULTNAME/$CONTAINER/$OBJECT" \
+
+
+exit 0
