@@ -1,9 +1,54 @@
 #!/bin/bash
 
+. $BASHRC_BASE/bashrc/errors.bash
 
+function usage() {
+  echo "Usage: brc-files-settempurlkey [-h] [-a BRC_AUTHTOKEN] [-v BRC_VAULTNAME]"
+  echo "Example:"
+  echo "  # brc-files-settempurlkey -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                        -v MossoCloudFS_199f2dd2-e293-11e3-87ea-6f46a026e216"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -h	Print this help"
+  echo "  -v X  Vault name for this account.  This can be set via the environment"
+  echo "        variable BRC_VAULTNAME instead of as an argument."
+}
+
+SNET=0
+USAGEFLAG=0
+while getopts ":a:hk:v:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    h) usage && exit 0;;
+    k) TEMPKEY="$OPTARG";;
+    v) BRC_VAULTNAME=$OPTARG;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+for ARG in BRC_AUTHTOKEN TEMPKEY; do
+  if [ -z "${!ARG}" ]; then
+    echo "ERROR: Must define $ARG in environment or argument"
+    USAGEFLAG=1
+  fi
+done
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+
+FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
+
+
+#
+# Make the call
 # If you use a ServiceNet endpoint here, all TempURLs generated with the
 #   key will only be accessible via ServiceNet
-
 DATA=$( curl -I --write-out \\n%{http_code} --silent --output - \
              $FILES_ENDPOINT/$BRC_VAULTNAME \
              -X POST \
@@ -12,4 +57,16 @@ DATA=$( curl -I --write-out \\n%{http_code} --silent --output - \
           2>/dev/null )
 RETVAL=$?
 CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+echo "Response code: $CODE"
+
+exit 0
+
 
