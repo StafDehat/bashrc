@@ -1,0 +1,95 @@
+#!/bin/bash
+
+#
+# List all users on the given cloud account
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-identity-adduser [-h] [-a BRC_AUTHTOKEN] -u NEWUSER"
+  echo "                            [-p PASSWORD] [-m EMAIL] [-e true|false]"
+  echo "Example:"
+  echo "  # brc-identity-adduser -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "  #                      -u NEWUSER"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -e X	Enabled?  true|false"
+  echo "  -h	Print this help"
+  echo "  -m X	Contact email address of new user"
+  echo "  -p X	Password for new user"
+  echo "  -u X	Username for new user"
+}
+
+USAGEFLAG=0
+while getopts ":ha:u:p:m:e:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    e) ENABLED=$OPTARG;;
+    m) EMAIL=$OPTARG;;
+    p) PASSWORD=$OPTARG;;
+    u) NEWUSER=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+# Check for required arguments
+if [ -z "$BRC_AUTHTOKEN" ]; then
+  echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$NEWUSER" ]; then
+  echo "ERROR: Must define NEWUSER as argument"
+  USAGEFLAG=1
+fi
+if [ ! -z "$ENABLED" ]; then
+  if [[ "$ENABLED" != "true" && "$ENABLED" != "false" ]]; then
+    echo "ERROR: \"-e\" must be either 'true' or 'false'"
+    USAGEFLAG=1
+  fi
+fi
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+
+POSTDATA=$(
+  echo -n '{ "user": { "username": "'$NEWUSER'"'
+  if [ ! -z "$PASSWORD" ]; then
+    echo -n ', "OS-KSADM:password": "'$PASSWORD'"'
+  fi
+  if [ ! -z "$EMAIL" ]; then
+    echo -n ', "email": "'$EMAIL'"'
+  fi
+  if [ ! -z "$ENABLED" ]; then
+    echo -n ', "enabled": '$ENABLED
+  fi
+  echo ' } }'
+)
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+             $IDENTITY_ENDPOINT/users \
+             -H "Content-Type: application/json" \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+             -d "$POSTDATA" \
+          2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+
+echo "$DATA"
+
+exit 0
+

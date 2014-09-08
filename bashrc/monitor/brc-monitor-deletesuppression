@@ -1,0 +1,70 @@
+#!/bin/bash
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-monitor-deletesuppression [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID] \\"
+  echo "                                     -i SUPPRESSIONID"
+  echo "Example:"
+  echo "  # brc-monitor-deletesuppression -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                                  -t 123456 \\"
+  echo "                                  -i e6f2c27cb8f811e396388bcf9ed02669"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -i X  Suppression ID."
+  echo "  -h	Print this help"
+  echo "  -t X	Tenant ID (DDI).  This can be set via the environment"
+  echo "        variable BRC_TENANTID instead of as an argument."
+}
+
+USAGEFLAG=0
+while getopts ":ha:t:i:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    i) SUPPRESSIONID=$OPTARG;;
+    t) BRC_TENANTID=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_AUTHTOKEN" ]; then
+  echo "ERROR: Must define BRC_AUTHTOKEN in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$BRC_TENANTID" ]; then
+  echo "ERROR: Must define BRC_TENANTID in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$SUPPRESSIONID" ]; then
+  echo "ERROR: Must define SUPPRESSIONID as argument"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+             $MONITOR_ENDPOINT/$BRC_TENANTID/suppressions/$SUPPRESSIONID \
+             -X DELETE \
+             -H "Content-Type: application/json" \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN"
+          2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+echo "Response code: $CODE"
+exit 0

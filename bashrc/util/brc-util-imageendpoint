@@ -1,0 +1,50 @@
+#!/bin/bash
+
+function usage() {
+  echo "Usage: brc-util-imageendpoint [-h] [-r BRC_REGION]"
+  echo "Example:"
+  echo "  # brc-util-imageendpoint -r dfw"
+  echo "Arguments:"
+  echo "  -h	Print this help."
+  echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
+  echo "        the environment variable BRC_REGION instead of as an"
+  echo "        argument."
+}
+
+USAGEFLAG=0
+while getopts ":hr:" arg; do
+  case $arg in
+    r) BRC_REGION=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_REGION" ]; then
+  echo "ERROR: Must define BRC_REGION in environment or argument"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+
+BRC_REGION=$( echo "$BRC_REGION" | tr 'A-Z' 'a-z' )
+case $BRC_REGION in
+  ord) ENDPOINT="https://ord.images.api.rackspacecloud.com/v2";;
+  dfw) ENDPOINT="https://dfw.images.api.rackspacecloud.com/v2";;
+  hkg) ENDPOINT="https://hkg.images.api.rackspacecloud.com/v2";;
+  lon) ENDPOINT="https://lon.images.api.rackspacecloud.com/v2";;
+  iad) ENDPOINT="https://iad.images.api.rackspacecloud.com/v2";;
+  syd) ENDPOINT="https://syd.images.api.rackspacecloud.com/v2";;
+    *) echo "ERROR: Unrecognized REGION code." && exit 1;;
+esac
+
+echo "$ENDPOINT"
+
+exit 0

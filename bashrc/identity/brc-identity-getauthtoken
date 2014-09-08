@@ -1,0 +1,83 @@
+#!/bin/bash
+
+#
+# Authenticate with API key to get a token
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-identity-getauthtoken [-h] [-u BRC_USERNAME] [-k BRC_API_KEY]"
+  echo "Example:"
+  echo "  # brc-identity-getauthtoken -u johndoe -k 1a2b3c4d5e6f7g8h9i0j"
+  echo "Arguments:"
+  echo "  -h	Print this help"
+  echo "  -k X  Cloud account API key.  This can be set via the environment"
+  echo "        variable BRC_API_KEY instead of as an argument."
+  echo "  -u X	Cloud account username.  This can be set via the environment"
+  echo "        variable BRC_USERNAME instead of as an argument."
+}
+
+USAGEFLAG=0
+while getopts ":hu:k:" arg; do
+  case $arg in
+    u) BRC_USERNAME=$OPTARG;;
+    k) BRC_API_KEY=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_USERNAME" ]; then
+  echo "ERROR: Must define BRC_USERNAME in environment or argument"
+  USAGEFLAG=1
+fi
+if [ -z "$BRC_API_KEY" ]; then
+  echo "ERROR: Must define BRC_API_KEY in environment or argument"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+
+DATA=$(curl --write-out \\n%{http_code} --silent --output - \
+            $IDENTITY_ENDPOINT/tokens \
+            -H "Content-Type: application/json" \
+            -d '{ "auth": { 
+                  "RAX-KSKEY:apiKeyCredentials": {
+                    "apiKey": "'$BRC_API_KEY'",
+                    "username": "'$BRC_USERNAME'" } } }' \
+         2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+
+AUTHTOKEN=$( echo "$DATA" \
+              | sed -n 's/^bashrc~access~token~id~//p' )
+TENANTID=$( echo "$DATA" \
+              | sed -n 's/^bashrc~access~token~tenant~id~//p' )
+EXPIRES=$( echo "$DATA" \
+              | sed -n 's/^bashrc~access~token~expires~//p' )
+VAULTNAME=$( echo "$DATA" \
+              | sed -n 's/^bashrc~access~user~roles~.*\?~tenantId~MossoCloudFS/MossoCloudFS/p' )
+
+
+echo "BRC_AUTHTOKEN=$AUTHTOKEN"
+echo "BRC_TENANTID=$TENANTID"
+echo "EXPIRES=$EXPIRES"
+echo "BRC_VAULTNAME=$VAULTNAME"
+
+exit 0

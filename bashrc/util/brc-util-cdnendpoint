@@ -1,0 +1,53 @@
+#!/bin/bash
+
+function usage() {
+  echo "Usage: brc-util-cdnendpoint [-h] [-r BRC_REGION]"
+  echo "Example:"
+  echo "  # brc-util-cdnendpoint -r dfw"
+  echo "Arguments:"
+  echo "  -h	Print this help."
+  echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
+  echo "        the environment variable BRC_REGION instead of as an"
+  echo "        argument."
+}
+
+USAGEFLAG=0
+INTERNAL=0
+while getopts ":hr:" arg; do
+  case $arg in
+    r) BRC_REGION=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+if [ -z "$BRC_REGION" ]; then
+  echo "ERROR: Must define BRC_REGION in environment or argument"
+  USAGEFLAG=1
+fi
+
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+
+ENDPOINT="https://"
+
+BRC_REGION=$( echo "$BRC_REGION" | tr 'A-Z' 'a-z' )
+case $BRC_REGION in
+  ord) ENDPOINT="https://cdn2.clouddrive.com/v1";;
+  dfw) ENDPOINT="https://cdn1.clouddrive.com/v1";;
+  hkg) ENDPOINT="https://cdn6.clouddrive.com/v1";;
+  lon) ENDPOINT="https://cdn3.clouddrive.com/v1";;
+  iad) ENDPOINT="https://cdn5.clouddrive.com/v1";;
+  syd) ENDPOINT="https://cdn4.clouddrive.com/v1";;
+    *) echo "ERROR: Unrecognized REGION code." && exit 1;;
+esac
+
+echo "$ENDPOINT"
+
+exit 0

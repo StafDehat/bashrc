@@ -1,0 +1,69 @@
+#!/bin/bash
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-files-getvaultname [-h] [-a BRC_AUTHTOKEN] \\"
+  echo "                              [-t BRC_TENANTID]"
+  echo "Example:"
+  echo "  # brc-files-getvaultname -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                           -t 123456"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -h	Print this help"
+  echo "  -t X	Tenant ID (DDI).  This can be set via the environment"
+  echo "        variable BRC_TENANTID instead of as an argument."
+}
+
+USAGEFLAG=0
+while getopts ":ha:t:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    t) BRC_TENANTID=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+for ARG in BRC_AUTHTOKEN BRC_TENANTID; do
+  if [ -z "${!ARG}" ]; then
+    echo "ERROR: Must define $ARG in environment or argument"
+    USAGEFLAG=1
+  fi
+done
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+#
+# Do an authentication call to get an Auth Token
+# Yes this is super shitty slow, but it's the only way I know of
+# to get the vault name.
+DATA=$(curl --write-out \\n%{http_code} --silent --output - \
+            $IDENTITY_ENDPOINT/tokens \
+            -H "Content-Type: application/json" \
+            -d '{ "auth": {
+                    "tenantId": "'$BRC_TENANTID'",
+                    "token": {
+                      "id": "'$BRC_AUTHTOKEN'" } } }' \
+         2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+
+echo "$DATA" | sed -n 's/^.*MossoCloudFS/MossoCloudFS/p'
+
+exit 0
