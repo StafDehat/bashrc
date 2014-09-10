@@ -1,0 +1,82 @@
+#!/bin/bash
+
+#
+# Import an image from local file to Rackspace Cloud
+
+. $BASHRC_BASE/bashrc/errors.bash
+
+function usage() {
+  echo "Usage: brc-image-removetag [-h] [-a BRC_AUTHTOKEN] [-r BRC_REGION]\\"
+  echo "                        -i IMAGEID -T TAG"
+  echo "Example:"
+  echo "  # brc-image-removetag -a 1a2b3c4d5e6f7g8h9i0j \\"
+  echo "                     -r dfw \\"
+  echo "                     -i bb1e7a7e-caff-11e3-8604-e7e905fb9520"
+  echo "                     -T DoNotDelete \\"
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -h	Print this help."
+  echo "  -i X  ID of image."
+  echo "  -r X  Region.  Examples: iad, dfw, ord, syd.  This can be set via"
+  echo "        the environment variable BRC_REGION instead of as an"
+  echo "        argument."
+  echo "  -T X  Tag to remove."
+}
+
+USAGEFLAG=0
+IMAGEID=""
+TAG=""
+while getopts ":a:hi:r:T:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    r) BRC_REGION=$OPTARG;;
+    T) TAG="$OPTARG";;
+    i) IMAGEID=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+for ARG in BRC_AUTHTOKEN BRC_REGION; do
+  if [ -z "${!ARG}" ]; then
+    echo "ERROR: Must define $ARG in environment or argument"
+    USAGEFLAG=1
+  fi
+done
+for ARG in IMAGEID TAG; do
+  if [ -z "${!ARG}" ]; then
+    echo "ERROR: Must define $ARG as argument"
+    USAGEFLAG=1
+  fi
+done
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
+BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
+IMAGE_ENDPOINT=$( $BRCUTIL/brc-util-imageendpoint -r $BRC_REGION )
+
+# Currently only supports VHD format - keep hardcoded
+DATA=$( curl --write-out \\n%{http_code} --silent --output - \
+             "$IMAGE_ENDPOINT/images/$IMAGEID/tags/$TAG" \
+             -X DELETE \
+             -H "Content-Type: application/json" \
+             -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+          2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+if [ $RETVAL -ne 0 ]; then
+  errorcurlfail
+elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+fi
+
+echo "Response code: $CODE"
+exit 0
