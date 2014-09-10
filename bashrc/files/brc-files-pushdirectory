@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# brc-files-pushdirectory
+# Arguments: Everything createobject requires, except take a directory instead of a file
+# Goal: Recurse the given directory, and for each file:
+#       Upload file, rename to [uuid].  Set metadata X-Orig-Filename and
+#       X-orig-directory (relative)
+# Maybe use a text file with dir-to-uuid mappings, and/or file-to-uuid mappings?
+
