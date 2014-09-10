@@ -57,6 +57,7 @@ if [ $USAGEFLAG -ne 0 ]; then
 fi
 
 
+BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )
 FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
 
 
