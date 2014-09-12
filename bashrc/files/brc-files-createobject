@@ -41,8 +41,11 @@ function usage() {
   echo "        variable BRC_VAULTNAME instead of as an argument."
 }
 
-SNET=0
 USAGEFLAG=0
+CONTAINER=""
+LOCALFILE=""
+OBJECTNAME=""
+SNET=0
 while getopts ":a:c:f:hn:r:sv:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
