@@ -4,7 +4,7 @@ ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
 
 ALLGOOD=1
 
-for COMMAND in du bc curl date sed awk openssl; do
+for COMMAND in nc du bc curl date sed awk openssl; do
   which $COMMAND &>/dev/null
   if [ $? -ne 0 ]; then
     echo "ERROR: '$COMMAND' binary not found in PATH"

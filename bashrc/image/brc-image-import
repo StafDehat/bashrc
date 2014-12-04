@@ -68,7 +68,7 @@ fi
 
 if [ -z "$IMAGENAME" ]; then
   IMAGENAME=$( basename $IMAGEFILE )
-  IMAGENAME=${$IMAGEFILE/.vhd/}
+  IMAGENAME=${IMAGEFILE/.vhd/}
 fi
 
 BRC_REGION=$( echo $BRC_REGION | tr 'A-Z' 'a-z' )

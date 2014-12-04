@@ -1,0 +1,29 @@
+#!/bin/bash
+
+
+# Stubbed with notes
+
+
+
+Params:
+Env:Authtoken
+Env:DDI
+Env:Region
+Manual:CBSName
+Manual:Size
+Manual:Type (SSD/SATA)
+ManualXOR:ImageID or SnapshotID
+Optional:Availability zone?
+Optional:DisplayDescription
+
+
+
+curl -i https://$REGION.blockstorage.api.rackspacecloud.com/v1/$DDI/volumes \
+  -H "X-Auth-Token: $AUTHTOKEN" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{ "volume": { "display_name": "'$CBSNAME'",
+                    "imageRef": "'$IMGID'",
+                    "volume_type": "'$TYPE'",
+                    "size": "'$SIZE'" } }'
