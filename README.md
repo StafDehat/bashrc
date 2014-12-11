@@ -20,7 +20,7 @@ Installation:
   in /etc/profile.d/
 
   Questions?
-  andrew@rootmypc.net
+  andrew -at- rootmypc dot net
 
 All content protected under
 GNU General Public License (GPL) version 3
