@@ -49,7 +49,7 @@ LOCALFILE=""
 OBJECTNAME=""
 SNET=0
 MAXSIZE=$(( 1024 * 1024 * 1024 * 5 ))
-while getopts ":a:c:f:hn:r:sv:" arg; do
+while getopts ":a:b:c:f:hn:r:sv:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
     b) MAXSIZE=$OPTARG;;
