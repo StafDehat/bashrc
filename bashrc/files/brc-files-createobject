@@ -17,7 +17,7 @@ trap 'cleanup' 1 2 9 15 17 19 23 EXIT
 function usage() {
   echo "Usage: brc-files-createobject [-h] [-a BRC_AUTHTOKEN] [-v BRC_VAULTNAME] \\"
   echo "                              [-s] [-r BRC_REGION] [-n OBJECTNAME] \\"
-  echo "                              -f LOCALFILE -c CONTAINER"
+  echo "                              [-b BYTES] -f LOCALFILE -c CONTAINER"
   echo "Example:"
   echo "  # brc-files-createobject -a 1a2b3c4d5e6f7g8h9i0j \\"
   echo "                           -v MossoCloudFS_199f2dd2-e293-11e3-87ea-6f46a026e216 \\"
@@ -27,6 +27,8 @@ function usage() {
   echo "Arguments:"
   echo "  -a X	Authentication token.  This can be set via the environment"
   echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -b X  Split object into X-byte sized segments.  Create a manifest file"
+  echo "        if this results in multiple segments.  Default:5368709120 (5GB)"
   echo "  -c X  Name of Cloud Files container in which to store file."
   echo "  -f X  Path to local file to be uploaded."
   echo "  -h	Print this help"
@@ -46,9 +48,11 @@ CONTAINER=""
 LOCALFILE=""
 OBJECTNAME=""
 SNET=0
+MAXSIZE=$(( 1024 * 1024 * 1024 * 5 ))
 while getopts ":a:c:f:hn:r:sv:" arg; do
   case $arg in
     a) BRC_AUTHTOKEN=$OPTARG;;
+    b) MAXSIZE=$OPTARG;;
     c) CONTAINER="$OPTARG";;
     f) LOCALFILE="$OPTARG";;
     h) usage && exit 0;;
@@ -191,7 +195,6 @@ function uploadLargeFile() {
 # Test the source file.
 # If > 5G then upload in 1G segments, then create a dynamic manifest
 # http://docs.rackspace.com/files/api/v1/cf-devguide/content/Large_Object_Creation-d1e2019.html
-MAXSIZE=$(( 5 * 1024 * 1024 * 1024 ))
 if [ $( stat -c %s "$LOCALFILE" ) -le $MAXSIZE ]; then
   # Retry loop - try <=10 times
   for x in `seq 1 10`; do
