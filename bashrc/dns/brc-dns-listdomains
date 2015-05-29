@@ -1,0 +1,77 @@
+#!/bin/bash
+
+#
+# List domains configured with Rackspace Cloud DNS
+
+. $BASHRC_BASE/bashrc/errors.bash
+. $BASHRC_BASE/bashrc/dns.bash
+
+function usage() {
+  echo "Usage: brc-dns-listdomains [-h] [-a BRC_AUTHTOKEN] [-t BRC_TENANTID]\\"
+  echo "Example:"
+  echo "  # brc-dns-listdomains -a 1a2b3c4d5e6f7g8h9i0j \\"
+
+  echo "Arguments:"
+  echo "  -a X	Authentication token.  This can be set via the environment"
+  echo "        variable BRC_AUTHTOKEN instead of as an argument."
+  echo "  -t X	Tenant ID (DDI).  This can be set via the environment"
+  echo "        variable BRC_TENANTID instead of as an argument."
+  echo "  -h	Print this help."
+}
+
+USAGEFLAG=0
+while getopts ":a:t:h:" arg; do
+  case $arg in
+    a) BRC_AUTHTOKEN=$OPTARG;;
+    t) BRC_TENANTID=$OPTARG;;
+    h) usage && exit 0;;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+
+  if [ -z "$BRC_AUTHTOKEN" ]; then
+    echo "ERROR: Must define $ARG in environment or argument"
+    USAGEFLAG=1
+  fi
+
+	if [ -z "$BRC_TENANTID" ]; then
+  	echo "ERROR: Must define BRC_TENANTID in environment or argument"
+  USAGEFLAG=1
+	fi
+
+	if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+	fi
+
+#DNS_ENDPOINT=https://dns.api.rackspacecloud.com/v1.0
+
+DATA=$(curl  \
+            $DNS_ENDPOINT/$BRC_TENANTID/domains \
+			-X GET \
+            -H "Content-Type: application/json" \
+            -H "X-Auth-Token: $BRC_AUTHTOKEN" \
+         2>/dev/null )
+RETVAL=$?
+CODE=$( echo "$DATA" | tail -n 1 )
+
+# Check for failed API call
+#if [ $RETVAL -ne 0 ]; then
+#  errorcurlfail
+#elif [[ $(echo "$CODE" | grep -cE '^2..$') -eq 0 ]]; then
+#  errornot200 $CODE $( echo "$DATA" | head -n -1 )
+#fi
+#echo "Response code: $CODE"
+
+
+# Going to forego BRC's json tool, and experiment with parsing the raw json through jshon 
+#DATA=$( echo "$DATA" | head -n -1 | $BRCUTIL/brc-util-json.tool )
+
+echo "$DATA"
+#echo "$CODE"
+
+exit 0
+exit 0
