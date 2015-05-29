@@ -63,14 +63,6 @@ fi
 #FILES_ENDPOINT=$( $BRCUTIL/brc-util-filesendpoint -r $BRC_REGION )
 CDN_ENDPOINT=$( $BRCUTIL/brc-util-cdnendpoint -r $BRC_REGION )
 
-echo curl --write-out \\n%{http_code} --silent --output - \
-            $CDN_ENDPOINT/$BRC_VAULTNAME/$CONTAINER/$OBJECT \
-            -X DELETE \
-            -H "X-Auth-Token: $BRC_AUTHTOKEN" \
-            -H "X-Purge-Email: $EMAIL" 
-exit 0
-
-
 #
 # Purge the object
 DATA=$(curl --write-out \\n%{http_code} --silent --output - \
