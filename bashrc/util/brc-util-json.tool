@@ -4,7 +4,6 @@
 # Edit: On second thought, it's probably only possible to hit EXITLEVELS>0
 #   at the tail of a construct, so it should implicitly be local enough.
 
-LASTLINE="bashrc"
 PREFIX="bashrc"
 EXITLEVELS=0
 
@@ -16,22 +15,17 @@ function dolineitem() {
     LINE=$( echo "$LINE" | tr -d '"' )
     case $LINE in
       '{' ) # Start a list
-        LASTLINE="$LINE"
         docurlygroup $PREFIX;;
       '[' ) # Start an array
-        LASTLINE="$LINE"
         dosquaregroup $PREFIX;;
       ',' ) #Line Terminator
-        LASTLINE="$LINE"
         echo "$PREFIX"
         return;;
       '}'|']' ) # Line terminators that also terminate a group
-        LASTLINE="$LINE"
         EXITLEVELS=1
         echo "$PREFIX"
         return;;
       * ) #Values & Assignment
-        LASTLINE="$LINE"
         PREFIX="$PREFIX~$LINE";;
     esac
   done
