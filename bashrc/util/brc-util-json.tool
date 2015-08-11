@@ -4,8 +4,59 @@
 # Edit: On second thought, it's probably only possible to hit EXITLEVELS>0
 #   at the tail of a construct, so it should implicitly be local enough.
 
-PREFIX="bashrc"
 EXITLEVELS=0
+
+
+#
+# Verify the existence of pre-req's
+PREREQS="grep sed tr echo"
+PREREQFLAG=0
+for PREREQ in $PREREQS; do
+  which $PREREQ &>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Error: Gotta have '$PREREQ' binary to run."
+    PREREQFLAG=1
+  fi
+done
+if [ $PREREQFLAG -ne 0 ]; then
+  exit 1
+fi
+
+
+#
+# Define a usage statement
+function usage() {
+  echo "Usage: $0 [-h]\\"
+  echo "         [-F Field-Separator] \\"
+  echo "         [-p Prefix]"
+  echo
+  echo "Arguments:"
+  echo "  -F X	Use 'X' to separate fields."
+  echo "  -h	Print this help."
+  echo "  -p X	Prefix each line with the field 'X'."
+}
+
+
+#
+# Handle command-line args
+PREFIX=""
+DELIMITER='/'
+while getopts ":F:hp:" arg; do
+  case $arg in
+    F) DELIMITER="$OPTARG";;
+    h) usage && exit 0;;
+    p) PREFIX="$OPTARG";;
+    :) echo "ERROR: Option -$OPTARG requires an argument."
+       USAGEFLAG=1;;
+    *) echo "ERROR: Invalid option: -$OPTARG"
+       USAGEFLAG=1;;
+  esac
+done #End arguments
+shift $(($OPTIND - 1))
+if [ $USAGEFLAG -ne 0 ]; then
+  usage && exit 1
+fi
+
 
 
 # Handle a single item from this list/array
@@ -26,7 +77,7 @@ function dolineitem() {
         echo "$PREFIX"
         return;;
       * ) #Values & Assignment
-        PREFIX="$PREFIX~$LINE";;
+        PREFIX="${PREFIX}${DELIMITER}${LINE}";;
     esac
   done
 }
@@ -50,7 +101,7 @@ function dosquaregroup() {
   local PREFIX=$1
   local COUNT=0
   while true; do
-    dolineitem "$PREFIX~$COUNT"
+    dolineitem "${PREFIX}${DELIMITER}${COUNT}"
     COUNT=$(( $COUNT + 1 ))
     if [ "$EXITLEVELS" -ne 0 ]; then
       EXITLEVELS=$(( $EXITLEVELS - 1 ))
