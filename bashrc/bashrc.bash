@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ABSPATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd && cd $OLDPWD)
+ABSPATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && "$( echo "PWD")" )"
 
 ALLGOOD=1
 
