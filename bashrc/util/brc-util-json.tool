@@ -41,6 +41,7 @@ function usage() {
 # Handle command-line args
 PREFIX=""
 DELIMITER='/'
+USAGEFLAG=0
 while getopts ":F:hp:" arg; do
   case $arg in
     F) DELIMITER="$OPTARG";;
@@ -53,7 +54,7 @@ while getopts ":F:hp:" arg; do
   esac
 done #End arguments
 shift $(($OPTIND - 1))
-if [ $USAGEFLAG -ne 0 ]; then
+if [ "$USAGEFLAG" -ne 0 ]; then
   usage && exit 1
 fi
 
